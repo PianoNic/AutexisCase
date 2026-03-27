@@ -74,17 +74,25 @@ export default function HomeScreen() {
 
     fetch('/api/Scan/recent', { headers })
       .then(r => r.ok ? r.json() : [])
-      .then((scans: any[]) => setProducts(scans.map(s => ({
-        id: s.productId,
-        gtin: '',
-        name: s.productName,
-        brand: s.productBrand,
-        imageUrl: s.productImageUrl,
-        category: null,
-        status: s.productStatus,
-        nutriScore: null,
-        riskScore: 0,
-      }))))
+      .then((scans: any[]) => {
+        const seen = new Set<string>()
+        const unique = scans.filter((s: any) => {
+          if (seen.has(s.productId)) return false
+          seen.add(s.productId)
+          return true
+        })
+        setProducts(unique.map((s: any) => ({
+          id: s.productId,
+          gtin: '',
+          name: s.productName,
+          brand: s.productBrand,
+          imageUrl: s.productImageUrl,
+          category: null,
+          status: s.productStatus,
+          nutriScore: null,
+          riskScore: 0,
+        })))
+      })
       .catch(console.error)
 
     fetch('/api/Scan/alerts', { headers })

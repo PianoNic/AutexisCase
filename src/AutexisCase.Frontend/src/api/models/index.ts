@@ -19,6 +19,7 @@ export * from './ProblemDetails';
 export * from './ProductDto';
 export * from './ProductStatus';
 export * from './ProductSummaryDto';
+export * from './ScanRecordDto';
 export * from './TemperatureLogDto';
 export * from './UserDto';
 export * from './UserRole';
