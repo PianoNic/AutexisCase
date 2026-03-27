@@ -40,9 +40,11 @@ dotnet user-secrets set "Oidc:RedirectUri" "http://localhost:5173/callback"
 dotnet user-secrets set "Oidc:PostLogoutRedirectUri" "http://localhost:5173/"
 dotnet user-secrets set "OpenRouter:ApiKey" "<your-openrouter-api-key>"
 dotnet user-secrets set "OpenRouter:Model" "google/gemini-2.0-flash-001"
+dotnet user-secrets set "OpenRouteService:ApiKey" "<your-ors-api-key>"
 ```
 
-> Ask a team member for the OIDC Client ID and OpenRouter API key.
+> Ask a team member for the OIDC Client ID, OpenRouter API key, and ORS API key.
+> Get a free ORS key at https://openrouteservice.org/dev/#/signup
 
 ### 4. Run the backend
 
@@ -124,6 +126,7 @@ Users can also enter the LOT number manually or skip the LOT step.
 | **Auth** | OIDC/JWT via Pocket ID (PKCE) |
 | **AI/OCR** | Microsoft Semantic Kernel + OpenRouter (vision LLM) |
 | **Barcode** | Native BarcodeDetector API + zxing-wasm fallback |
+| **Routing** | [OpenRouteService](https://openrouteservice.org) (truck/car route polylines) |
 | **Product Data** | Open Food Facts (auto-fetch) |
 | **Architecture** | Clean Architecture, CQRS (Mediator), role-based authorization |
 

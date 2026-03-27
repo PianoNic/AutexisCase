@@ -18,6 +18,7 @@ public interface IAppDbContext
     DbSet<TemperatureLog> TemperatureLogs { get; }
     DbSet<Alert> Alerts { get; }
     DbSet<ScanRecord> ScanRecords { get; }
+    DbSet<RouteCache> RouteCaches { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

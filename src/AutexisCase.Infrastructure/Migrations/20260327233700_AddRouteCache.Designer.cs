@@ -3,6 +3,7 @@ using System;
 using AutexisCase.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AutexisCase.Infrastructure.Migrations
 {
     [DbContext(typeof(AutexisCaseDbContext))]
-    partial class AutexisCaseDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327233700_AddRouteCache")]
+    partial class AddRouteCache
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

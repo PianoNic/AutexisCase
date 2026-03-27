@@ -20,6 +20,7 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
     public DbSet<TemperatureLog> TemperatureLogs => Set<TemperatureLog>();
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<ScanRecord> ScanRecords => Set<ScanRecord>();
+    public DbSet<RouteCache> RouteCaches => Set<RouteCache>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,6 +42,11 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
         modelBuilder.Entity<Batch>(e =>
         {
             e.HasIndex(b => new { b.ProductId, b.LotNumber }).IsUnique();
+        });
+
+        modelBuilder.Entity<RouteCache>(e =>
+        {
+            e.HasIndex(r => r.CacheKey).IsUnique();
         });
     }
 

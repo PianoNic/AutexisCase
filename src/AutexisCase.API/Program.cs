@@ -30,6 +30,8 @@ builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 builder.Services.AddSingleton<IOcrService, OcrService>();
 builder.Services.AddHttpClient<OpenFoodFactsService>();
 builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<OpenFoodFactsService>());
+builder.Services.AddHttpClient<RoutingService>();
+builder.Services.AddScoped<IRoutingService>(sp => sp.GetRequiredService<RoutingService>());
 
 
 // Mediator, Validation & Authorization

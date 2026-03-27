@@ -18,9 +18,11 @@ import type {
   BatchDto,
   JourneyCoordinatesDto,
   JourneyEventDto,
+  PointToPointRouteDto,
   ProblemDetails,
   ProductDto,
   ProductSummaryDto,
+  RouteDto,
 } from '../models/index';
 import {
     BatchDtoFromJSON,
@@ -29,16 +31,32 @@ import {
     JourneyCoordinatesDtoToJSON,
     JourneyEventDtoFromJSON,
     JourneyEventDtoToJSON,
+    PointToPointRouteDtoFromJSON,
+    PointToPointRouteDtoToJSON,
     ProblemDetailsFromJSON,
     ProblemDetailsToJSON,
     ProductDtoFromJSON,
     ProductDtoToJSON,
     ProductSummaryDtoFromJSON,
     ProductSummaryDtoToJSON,
+    RouteDtoFromJSON,
+    RouteDtoToJSON,
 } from '../models/index';
 
 export interface GetBatchByIdRequest {
     batchId: string;
+}
+
+export interface GetBatchRouteRequest {
+    batchId: string;
+}
+
+export interface GetPointToPointRouteRequest {
+    fromLat?: number;
+    fromLon?: number;
+    toLat?: number;
+    toLon?: number;
+    profile?: string;
 }
 
 export interface GetProductByGtinRequest {
@@ -103,6 +121,97 @@ export class ProductApi extends runtime.BaseAPI {
      */
     async getBatchById(requestParameters: GetBatchByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BatchDto> {
         const response = await this.getBatchByIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getBatchRouteRaw(requestParameters: GetBatchRouteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<RouteDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling getBatchRoute().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}/route`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => RouteDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getBatchRoute(requestParameters: GetBatchRouteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<RouteDto> {
+        const response = await this.getBatchRouteRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getPointToPointRouteRaw(requestParameters: GetPointToPointRouteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<PointToPointRouteDto>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['fromLat'] != null) {
+            queryParameters['fromLat'] = requestParameters['fromLat'];
+        }
+
+        if (requestParameters['fromLon'] != null) {
+            queryParameters['fromLon'] = requestParameters['fromLon'];
+        }
+
+        if (requestParameters['toLat'] != null) {
+            queryParameters['toLat'] = requestParameters['toLat'];
+        }
+
+        if (requestParameters['toLon'] != null) {
+            queryParameters['toLon'] = requestParameters['toLon'];
+        }
+
+        if (requestParameters['profile'] != null) {
+            queryParameters['profile'] = requestParameters['profile'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/route`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => PointToPointRouteDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getPointToPointRoute(requestParameters: GetPointToPointRouteRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PointToPointRouteDto> {
+        const response = await this.getPointToPointRouteRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
