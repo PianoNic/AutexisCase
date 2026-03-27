@@ -39,5 +39,5 @@ data/
 ## Tauri
 src-tauri/target/
 
-## OpenAPI generated client
-src/AutexisCase.Frontend/src/api/generated/
+## OpenAPI spec (generated from backend URL)
+src/AutexisCase.Frontend/openapi.json
