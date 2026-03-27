@@ -5,6 +5,7 @@
 - **Every issue or feature MUST have a GitHub issue before any work begins.**
 - **Every change MUST go through a Pull Request (PR) — no direct commits to `main`.**
 - The `main` branch is protected: PRs require at least 1 approving review.
+- **Before creating a PR, always merge `main` into the feature branch** to ensure the latest changes are included.
 
 ## Labels
 
@@ -47,6 +48,34 @@ Examples:
 - Install deps: `cd src/AutexisCase.Frontend && bun install`
 - Dev server: `bun run dev`
 - Build: `bun run build`
+- **Every frontend change MUST be verified using the Playwright MCP** before committing.
+
+## Notifications
+
+- **Play a chime sound when a task is completed OR when user input is needed.**
+- This signals the user without requiring them to watch the terminal.
+
+### Setup (one-time)
+
+**Windows (PowerShell):**
+```powershell
+# Uses the built-in system sound — no install needed
+[System.Media.SystemSounds]::Exclamation.Play()
+```
+Run via bash:
+```bash
+powershell -c "[System.Media.SystemSounds]::Exclamation.Play()"
+```
+
+**macOS (Terminal):**
+```bash
+afplay /System/Library/Sounds/Glass.aiff
+```
+
+### Usage
+Claude will run the appropriate chime command automatically when:
+- A task or major step is completed
+- User input or a decision is required
 
 ## Branch Naming
 

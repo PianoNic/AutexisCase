@@ -1,3 +1,4 @@
+using AutexisCase.Application.Behaviors;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
 using AutexisCase.Domain;
@@ -6,6 +7,7 @@ using Mediator;
 
 namespace AutexisCase.Application.Commands;
 
+[AllowAuthenticated]
 public record CreateExampleCommand(string Title, string? Description) : ICommand<ExampleDto>;
 
 public class CreateExampleValidator : AbstractValidator<CreateExampleCommand>
