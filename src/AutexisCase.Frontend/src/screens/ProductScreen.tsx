@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ComposableMap, Geographies, Geography, Graticule, Line, Marker, Sphere } from 'react-simple-maps'
 import {
@@ -15,7 +15,8 @@ import { Separator } from '@/components/ui/separator'
 import { useAppAuth } from '@/auth/use-app-auth'
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json'
-const SNAP_POINTS = [0.76, 0.94]
+const SNAP_POINTS = [0.08, 0.55, 0.995]
+const EMPTY_EVENTS: JourneyEvent[] = []
 
 interface JourneyEvent {
   id: string
@@ -51,7 +52,13 @@ interface Product {
   waterLiters: number | null
   status: number
   journeyEvents: JourneyEvent[]
-  alerts: any[]
+  alerts: unknown[]
+}
+
+const statusColor: Record<number, string> = {
+  0: '#3d6b2e',
+  1: '#f59e0b',
+  2: '#ef4444',
 }
 
 const statusDot: Record<number, string> = {
@@ -84,58 +91,71 @@ function interpolate(start: number, end: number, progress: number) {
   return start + (end - start) * progress
 }
 
+function formatEventDate(timestamp: string) {
+  return new Date(timestamp).toLocaleDateString('de-CH', {
+    month: 'short',
+    year: 'numeric',
+  })
+}
+
 export default function ProductScreen() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { accessToken } = useAppAuth()
+  const id = searchParams.get('id')
+  const gtin = searchParams.get('gtin')
+  const hasLookupTarget = Boolean(id || gtin)
   const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[0])
+  const [loading, setLoading] = useState(hasLookupTarget)
+  const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[1])
   const [activeIndex, setActiveIndex] = useState(0)
   const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0])
   const [scale, setScale] = useState(680)
+  const rotationRef = useRef(rotation)
+  const scaleRef = useRef(scale)
   const cardsRef = useRef<Array<HTMLButtonElement | null>>([])
   const scrollRef = useRef<HTMLDivElement | null>(null)
-  const scrollTimeoutRef = useRef<number | null>(null)
-  const currentSnap = typeof snap === 'number' ? snap : SNAP_POINTS[0]
+  const isScrollSnapping = useRef(false)
+  const currentSnap = typeof snap === 'number' ? snap : SNAP_POINTS[1]
   const drawerProgress =
     (currentSnap - SNAP_POINTS[0]) / (SNAP_POINTS[SNAP_POINTS.length - 1] - SNAP_POINTS[0])
   const clampedDrawerProgress = Math.max(0, Math.min(1, drawerProgress))
-  const compactJourney = clampedDrawerProgress > 0.45
-  const journeyBottom = `${interpolate(26, 58, clampedDrawerProgress)}vh`
-  const journeyCardWidth = `${interpolate(260, 212, clampedDrawerProgress)}px`
-  const journeyCardScale = interpolate(1, 0.92, clampedDrawerProgress)
+  const compactJourney = clampedDrawerProgress > 0.35
+  const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1]
 
   useEffect(() => {
-    if (!accessToken) return
-    const id = searchParams.get('id')
-    const gtin = searchParams.get('gtin')
-    if (!id && !gtin) { setLoading(false); return }
+    rotationRef.current = rotation
+    scaleRef.current = scale
+  }, [rotation, scale])
+
+  useEffect(() => {
+    if (!accessToken || !hasLookupTarget) return
 
     const url = id ? `/api/Product/${id}` : `/api/Product/gtin/${gtin}`
     fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
         setProduct(data)
         if (data?.journeyEvents?.length > 0) {
-          const first = data.journeyEvents[0]
-          setRotation(coordToRotation(first.longitude, first.latitude))
+          const firstEvent = data.journeyEvents[0]
+          setRotation(coordToRotation(firstEvent.longitude, firstEvent.latitude))
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false))
-  }, [accessToken, searchParams])
+  }, [accessToken, gtin, hasLookupTarget, id])
 
-  const events = product?.journeyEvents ?? []
+  const events = product?.journeyEvents ?? EMPTY_EVENTS
 
   useEffect(() => {
     if (events.length === 0) return
+
     const activeEvent = events[activeIndex]
     if (!activeEvent) return
+
     const targetRotation = coordToRotation(activeEvent.longitude, activeEvent.latitude)
-    const startRotation = rotation
-    const startScale = scale
+    const startRotation = rotationRef.current
+    const startScale = scaleRef.current
     const duration = 550
     const startedAt = performance.now()
     let frameId = 0
@@ -158,59 +178,61 @@ export default function ProductScreen() {
 
     frameId = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(frameId)
-  }, [activeIndex, events.length])
+  }, [activeIndex, events])
 
-  const centerActiveCard = (index: number, behavior: ScrollBehavior = 'smooth') => {
-    cardsRef.current[index]?.scrollIntoView({
-      behavior,
-      block: 'nearest',
-      inline: 'center',
-    })
-  }
-
-  const detectClosestCard = () => {
+  const scrollToCard = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
+    const card = cardsRef.current[index]
     const container = scrollRef.current
-    if (!container) return activeIndex
+    if (!card || !container) return
+
+    const cardRect = card.getBoundingClientRect()
+    const containerRect = container.getBoundingClientRect()
+    const scrollLeft =
+      container.scrollLeft +
+      (cardRect.left - containerRect.left) -
+      (containerRect.width / 2 - cardRect.width / 2)
+
+    isScrollSnapping.current = true
+    container.scrollTo({ left: scrollLeft, behavior })
+    setTimeout(() => {
+      isScrollSnapping.current = false
+    }, behavior === 'smooth' ? 400 : 50)
+  }, [])
+
+  const handleScrollEnd = useCallback(() => {
+    if (isScrollSnapping.current) return
+
+    const container = scrollRef.current
+    if (!container) return
 
     const containerRect = container.getBoundingClientRect()
     const containerCenter = containerRect.left + containerRect.width / 2
 
-    let nextIndex = activeIndex
+    let closestIndex = 0
     let closestDistance = Number.POSITIVE_INFINITY
 
     cardsRef.current.forEach((card, index) => {
       if (!card) return
+
       const rect = card.getBoundingClientRect()
       const cardCenter = rect.left + rect.width / 2
       const distance = Math.abs(containerCenter - cardCenter)
       if (distance < closestDistance) {
         closestDistance = distance
-        nextIndex = index
+        closestIndex = index
       }
     })
 
-    if (nextIndex !== activeIndex) setActiveIndex(nextIndex)
-    return nextIndex
-  }
-
-  const handleCardScroll = () => {
-    if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current)
-    scrollTimeoutRef.current = window.setTimeout(() => {
-      const nextIndex = detectClosestCard()
-      centerActiveCard(nextIndex)
-    }, 90)
-  }
-
-  useEffect(() => {
-    centerActiveCard(activeIndex, 'auto')
-    return () => {
-      if (scrollTimeoutRef.current) window.clearTimeout(scrollTimeoutRef.current)
+    if (closestIndex !== activeIndex) {
+      setActiveIndex(closestIndex)
     }
-  }, [])
+    scrollToCard(closestIndex)
+  }, [activeIndex, scrollToCard])
 
   useEffect(() => {
-    centerActiveCard(activeIndex)
-  }, [activeIndex])
+    if (events.length === 0) return
+    scrollToCard(activeIndex, 'auto')
+  }, [activeIndex, events.length, scrollToCard])
 
   if (loading) {
     return (
@@ -224,7 +246,9 @@ export default function ProductScreen() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
         <p className="text-sm text-muted-foreground">Product not found.</p>
-        <Button variant="outline" onClick={() => navigate('/')}>Go back</Button>
+        <Button variant="outline" onClick={() => navigate('/')}>
+          Go back
+        </Button>
       </div>
     )
   }
@@ -241,8 +265,8 @@ export default function ProductScreen() {
             <Sphere id="sphere" fill="#eef7f0" stroke="#cfe3d5" strokeWidth={0.7} />
             <Graticule stroke="#d7e6da" strokeWidth={0.45} />
             <Geographies geography={GEO_URL}>
-              {({ geographies }: { geographies: any[] }) =>
-                geographies.map((geo: any) => (
+              {({ geographies }: { geographies: Array<{ rsmKey: string }> }) =>
+                geographies.map((geo: { rsmKey: string }) => (
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
@@ -287,7 +311,7 @@ export default function ProductScreen() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-background to-transparent" />
 
-        <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pt-12">
+        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pt-12">
           <Button
             variant="outline"
             size="icon"
@@ -299,72 +323,9 @@ export default function ProductScreen() {
             </svg>
           </Button>
 
-          <div className="rounded-full border bg-background/95 px-3 py-1 text-xs text-muted-foreground shadow-sm">
-            Journey Map
-          </div>
+          <div className="w-9" />
         </div>
       </div>
-
-      {events.length > 0 && (
-        <div
-          className="absolute inset-x-0 z-20 px-4 transition-all duration-300"
-          style={{ bottom: journeyBottom }}
-        >
-          <div
-            className="transition-all duration-300"
-            style={{ transform: `scale(${journeyCardScale})`, transformOrigin: 'bottom center' }}
-          >
-            <div className="mb-2 flex items-center justify-between px-1">
-              <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
-                Supply Chain Journey
-              </p>
-              <span className="text-xs text-muted-foreground">
-                {activeIndex + 1} / {events.length}
-              </span>
-            </div>
-
-            <div
-              ref={scrollRef}
-              onScroll={handleCardScroll}
-              className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {events.map((event, index) => (
-                <button
-                  key={event.id}
-                  ref={(element) => { cardsRef.current[index] = element }}
-                  onClick={() => setActiveIndex(index)}
-                  className="snap-center"
-                >
-                  <Card
-                    size="sm"
-                    className={`bg-background/96 text-left shadow-sm transition-all ${
-                      index === activeIndex ? 'border-primary ring-2 ring-primary/15' : 'border-border'
-                    }`}
-                    style={{ width: journeyCardWidth }}
-                  >
-                    <CardContent className={`space-y-2 ${compactJourney ? 'py-3' : 'py-4'}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium">{event.step}</p>
-                          <p className="text-xs text-muted-foreground">{event.location}</p>
-                        </div>
-                        <div className={`mt-1 h-2.5 w-2.5 rounded-full ${statusDot[event.status] ?? 'bg-primary'}`} />
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(event.timestamp).toLocaleDateString('de-CH', { month: 'short', year: 'numeric' })}
-                        {event.temperature != null && ` · ${event.temperature}°C`}
-                      </p>
-                      {!compactJourney && event.details && (
-                        <p className="text-sm text-foreground/80">{event.details}</p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <Drawer
         open
@@ -373,12 +334,102 @@ export default function ProductScreen() {
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
       >
-        <DrawerContent className="max-h-[96vh] flex flex-col overflow-hidden">
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col">
+          {events.length > 0 && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
+              <div
+                ref={scrollRef}
+                onScrollEnd={handleScrollEnd}
+                onPointerDownCapture={(event) => event.stopPropagation()}
+                className="pointer-events-auto flex snap-x snap-mandatory items-center gap-0 overflow-x-auto overscroll-x-contain px-4 py-1 touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {events.map((event, index) => (
+                  <div key={event.id} className="flex shrink-0 snap-center items-center">
+                    {index > 0 && (
+                      <div className="flex items-center px-1.5">
+                        <div
+                          className="h-0.5 w-6 rounded-full transition-colors duration-300"
+                          style={{
+                            backgroundColor:
+                              index <= activeIndex ? statusColor[events[index - 1].status] : '#d1d5db',
+                          }}
+                        />
+                        <svg
+                          className="-ml-0.5 h-2 w-1.5 transition-colors duration-300"
+                          viewBox="0 0 6 8"
+                          fill={index <= activeIndex ? statusColor[events[index - 1].status] : '#d1d5db'}
+                        >
+                          <path d="M0 0L6 4L0 8Z" />
+                        </svg>
+                      </div>
+                    )}
+
+                    <button
+                      ref={(element) => {
+                        cardsRef.current[index] = element
+                      }}
+                      onClick={() => setActiveIndex(index)}
+                      className="shrink-0"
+                    >
+                      <Card
+                        size="sm"
+                        className={`bg-background/96 text-left shadow-sm transition-all duration-200 ${
+                          index === activeIndex
+                            ? 'border-primary ring-2 ring-primary/15'
+                            : 'border-border'
+                        }`}
+                        style={{ width: compactJourney ? undefined : '280px' }}
+                      >
+                        <CardContent className={compactJourney ? 'px-3 py-2' : 'space-y-3 px-4 py-4'}>
+                          {compactJourney ? (
+                            <div className="flex items-center gap-2.5">
+                              <div
+                                className={`h-2 w-2 shrink-0 rounded-full ${statusDot[event.status] ?? 'bg-primary'}`}
+                              />
+                              <span className="text-sm font-medium">{event.step}</span>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2.5">
+                                <div
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${statusDot[event.status] ?? 'bg-primary'}`}
+                                >
+                                  {index + 1}
+                                </div>
+                                <p className="text-sm font-semibold leading-tight">{event.step}</p>
+                              </div>
+
+                              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <span>{event.location}</span>
+                                <span>{formatEventDate(event.timestamp)}</span>
+                              </div>
+
+                              {event.details && (
+                                <p className="text-[13px] leading-snug text-foreground/75">
+                                  {event.details}
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </button>
+                  </div>
+                ))}
+
+                <div className="w-[40%] shrink-0" />
+              </div>
+            </div>
+          )}
+
           <DrawerHeader className="shrink-0">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-1">
                 <DrawerTitle>{product.name}</DrawerTitle>
-                <DrawerDescription>{product.brand} · {product.weight}</DrawerDescription>
+                <DrawerDescription>
+                  {product.brand}
+                  {product.weight ? ` · ${product.weight}` : ''}
+                </DrawerDescription>
               </div>
               <Badge variant={badgeVariant[product.status] ?? 'default'}>
                 {statusLabel[product.status] ?? 'OK'}
@@ -386,7 +437,11 @@ export default function ProductScreen() {
             </div>
           </DrawerHeader>
 
-          <div className="flex-1 space-y-4 overflow-y-auto pb-6">
+          <div
+            className={`flex-1 space-y-4 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
+              isFullyOpen ? 'overflow-y-auto' : 'overflow-hidden'
+            }`}
+          >
             <div className="grid grid-cols-3 gap-2 px-4">
               {[
                 { label: 'Origin', value: product.origin ?? '-' },
@@ -402,17 +457,73 @@ export default function ProductScreen() {
 
             {product.certifications.length > 0 && (
               <div className="flex flex-wrap gap-1.5 px-4">
-                {product.certifications.map(cert => (
-                  <Badge key={cert} variant="secondary">{cert}</Badge>
+                {product.certifications.map((certification) => (
+                  <Badge key={certification} variant="secondary">
+                    {certification}
+                  </Badge>
                 ))}
               </div>
             )}
 
             <Separator />
 
+            <div className="space-y-1 px-4">
+              <h3 className="text-sm font-semibold">Ingredients</h3>
+              <p className="text-sm text-muted-foreground">
+                Cocoa mass, sugar, cocoa butter, vanilla extract. Cocoa solids: 70% minimum.
+              </p>
+            </div>
+
+            <Separator />
+
             <div className="space-y-2 px-4">
+              <h3 className="text-sm font-semibold">Nutrition Facts</h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                {[
+                  { label: 'Energy', value: '2,310 kJ / 556 kcal' },
+                  { label: 'Fat', value: '41 g' },
+                  { label: 'Saturated Fat', value: '25 g' },
+                  { label: 'Carbohydrates', value: '33 g' },
+                  { label: 'Sugars', value: '27 g' },
+                  { label: 'Protein', value: '10 g' },
+                  { label: 'Salt', value: '0.03 g' },
+                  { label: 'Fibre', value: '11 g' },
+                ].map((item) => (
+                  <div key={item.label} className="flex justify-between border-b border-border/50 py-1">
+                    <span className="text-muted-foreground">{item.label}</span>
+                    <span className="font-medium">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2 px-4">
+              <h3 className="text-sm font-semibold">Ecological Footprint</h3>
+              <div className="rounded-xl bg-muted p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">CO₂ per 100g</span>
+                  <span className="font-medium">
+                    {product.co2Kg != null ? `${product.co2Kg} kg CO₂e` : '-'}
+                  </span>
+                </div>
+                <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
+                  <div className="h-full w-[45%] rounded-full bg-amber-500" />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Moderate impact
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-2 px-4 pb-6">
               <Button className="w-full">Report Issue</Button>
-              <Button variant="outline" className="w-full" onClick={() => navigate('/')}>Back to Home</Button>
+              <Button variant="outline" className="w-full" onClick={() => navigate('/')}>
+                Back to Home
+              </Button>
             </div>
           </div>
         </DrawerContent>
