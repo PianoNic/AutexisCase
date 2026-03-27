@@ -56,7 +56,19 @@ export interface BatchSummaryDto {
      * @type {Date}
      * @memberof BatchSummaryDto
      */
+    productionDate?: Date | null;
+    /**
+     * 
+     * @type {Date}
+     * @memberof BatchSummaryDto
+     */
     expiryDate?: Date | null;
+    /**
+     * 
+     * @type {number}
+     * @memberof BatchSummaryDto
+     */
+    daysRemaining?: number | null;
 }
 
 
@@ -82,7 +94,9 @@ export function BatchSummaryDtoFromJSONTyped(json: any, ignoreDiscriminator: boo
         'lotNumber': json['lotNumber'] == null ? undefined : json['lotNumber'],
         'status': json['status'] == null ? undefined : ProductStatusFromJSON(json['status']),
         'riskScore': json['riskScore'] == null ? undefined : json['riskScore'],
+        'productionDate': json['productionDate'] == null ? undefined : (new Date(json['productionDate'])),
         'expiryDate': json['expiryDate'] == null ? undefined : (new Date(json['expiryDate'])),
+        'daysRemaining': json['daysRemaining'] == null ? undefined : json['daysRemaining'],
     };
 }
 
@@ -101,7 +115,9 @@ export function BatchSummaryDtoToJSONTyped(value?: BatchSummaryDto | null, ignor
         'lotNumber': value['lotNumber'],
         'status': ProductStatusToJSON(value['status']),
         'riskScore': value['riskScore'],
+        'productionDate': value['productionDate'] == null ? undefined : ((value['productionDate'] as any).toISOString()),
         'expiryDate': value['expiryDate'] == null ? undefined : ((value['expiryDate'] as any).toISOString()),
+        'daysRemaining': value['daysRemaining'],
     };
 }
 

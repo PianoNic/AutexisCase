@@ -3,6 +3,7 @@ apis/AuthApi.ts
 apis/ExampleApi.ts
 apis/OcrApi.ts
 apis/ProductApi.ts
+apis/ScanApi.ts
 apis/index.ts
 index.ts
 models/AlertDto.ts
@@ -24,6 +25,7 @@ models/ProblemDetails.ts
 models/ProductDto.ts
 models/ProductStatus.ts
 models/ProductSummaryDto.ts
+models/ScanRecordDto.ts
 models/TemperatureLogDto.ts
 models/UserDto.ts
 models/UserRole.ts
