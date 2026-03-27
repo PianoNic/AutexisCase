@@ -1,71 +1,78 @@
-using System.Text.RegularExpressions;
-using OpenCvSharp;
-using Sdcb.PaddleInference;
-using Sdcb.PaddleOCR;
-using Sdcb.PaddleOCR.Models;
-using Sdcb.PaddleOCR.Models.Online;
+using System.Text.Json;
+using AutexisCase.Application.Interfaces;
+using Microsoft.Extensions.Configuration;
+using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.ChatCompletion;
 
 namespace AutexisCase.Infrastructure.Services;
 
-public class OcrService : IDisposable
+public class OcrService : IOcrService
 {
-    private PaddleOcrAll? _engine;
-    private readonly SemaphoreSlim _initLock = new(1, 1);
+    private readonly IChatCompletionService _chat;
 
-    private static readonly Regex[] LotPatterns =
-    [
-        new(@"(?i)LOT[\s.:/#-]*([A-Z0-9\-]{3,})", RegexOptions.Compiled),
-        new(@"(?i)BATCH[\s.:/#-]*([A-Z0-9\-]{3,})", RegexOptions.Compiled),
-        new(@"(?i)CHARGE[\s.:/#-]*([A-Z0-9\-]{3,})", RegexOptions.Compiled),
-        new(@"(?i)L[\s.:]*(\d{4,}[A-Z0-9\-]*)", RegexOptions.Compiled),
-        new(@"#([A-Z]{2,3}-\d{4}-\d{3,})", RegexOptions.Compiled),
-    ];
-
-    private async Task EnsureInitializedAsync()
+    public OcrService(IConfiguration configuration)
     {
-        if (_engine is not null) return;
+        var apiKey = configuration["OpenRouter:ApiKey"] ?? throw new InvalidOperationException("OpenRouter:ApiKey not configured");
+        var model = configuration["OpenRouter:Model"] ?? "google/gemini-2.0-flash-001";
 
-        await _initLock.WaitAsync();
-        try
-        {
-            if (_engine is not null) return;
-            FullOcrModel model = await OnlineFullModels.EnglishV4.DownloadAsync();
-            _engine = new PaddleOcrAll(model, PaddleDevice.Mkldnn())
-            {
-                AllowRotateDetection = true,
-                Enable180Classification = true,
-            };
-        }
-        finally
-        {
-            _initLock.Release();
-        }
+        var builder = Kernel.CreateBuilder();
+        builder.AddOpenAIChatCompletion(
+            modelId: model,
+            apiKey: apiKey,
+            endpoint: new Uri("https://openrouter.ai/api/v1")
+        );
+        var kernel = builder.Build();
+        _chat = kernel.GetRequiredService<IChatCompletionService>();
     }
 
     public async Task<(string? LotNumber, string FullText)> ExtractLotNumberAsync(byte[] imageBytes)
     {
-        await EnsureInitializedAsync();
+        var base64 = Convert.ToBase64String(imageBytes);
+        var mimeType = "image/jpeg";
 
-        using var src = Mat.FromImageData(imageBytes, ImreadModes.Color);
-        var result = _engine!.Run(src);
-        var fullText = result.Text;
+        var history = new ChatHistory();
+        history.AddSystemMessage("""
+            You are a food packaging OCR assistant. Extract information from product packaging images.
+            Always respond with valid JSON only, no markdown, no explanation.
+            """);
 
-        foreach (var region in result.Regions)
+        var message = new ChatMessageContentItemCollection
         {
-            foreach (var pattern in LotPatterns)
-            {
-                var match = pattern.Match(region.Text);
-                if (match.Success)
-                    return (match.Groups[1].Value, fullText);
-            }
+            new TextContent("""
+                Extract the LOT/batch/charge number from this food packaging image.
+                Look for text like "LOT", "BATCH", "CHARGE", "L:", or any alphanumeric code near an expiry date.
+
+                Respond with this exact JSON format:
+                {"lotNumber": "THE_LOT_NUMBER", "expiryDate": "DD.MM.YYYY or null", "allText": "all visible text"}
+
+                If no LOT number is found, set lotNumber to null.
+                """),
+            new ImageContent(Convert.FromBase64String(base64), mimeType),
+        };
+
+        history.AddUserMessage(message);
+
+        var response = await _chat.GetChatMessageContentAsync(history);
+        var responseText = response.Content ?? "";
+
+        try
+        {
+            // Clean response — remove markdown code blocks if present
+            var json = responseText.Trim();
+            if (json.StartsWith("```")) json = json.Split('\n', 2).Length > 1 ? json.Split('\n', 2)[1] : json;
+            if (json.EndsWith("```")) json = json[..^3];
+            json = json.Trim();
+
+            var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+            var lotNumber = root.TryGetProperty("lotNumber", out var lot) && lot.ValueKind == JsonValueKind.String ? lot.GetString() : null;
+            var allText = root.TryGetProperty("allText", out var text) && text.ValueKind == JsonValueKind.String ? text.GetString() ?? "" : "";
+
+            return (lotNumber, allText);
         }
-
-        return (null, fullText);
-    }
-
-    public void Dispose()
-    {
-        _engine?.Dispose();
-        _initLock.Dispose();
+        catch
+        {
+            return (null, responseText);
+        }
     }
 }

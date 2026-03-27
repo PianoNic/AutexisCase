@@ -25,11 +25,24 @@ export default function LotCaptureScreen() {
     navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
       audio: false,
-    }).then(stream => {
+    }).then(async stream => {
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play().then(() => setCameraReady(true))
+        await videoRef.current.play()
+        setCameraReady(true)
+      }
+      // Apply autofocus
+      const track = stream.getVideoTracks()[0]
+      if (track) {
+        try {
+          await track.applyConstraints({
+            advanced: [
+              { focusMode: 'continuous' } as any,
+              { exposureMode: 'continuous' } as any,
+            ],
+          })
+        } catch { /* unsupported */ }
       }
     }).catch(() => {
       setShowManual(true)
