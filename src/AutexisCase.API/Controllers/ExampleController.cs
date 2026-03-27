@@ -15,7 +15,7 @@ public class ExampleController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetAsync(CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetExamplesQuery(), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpPost(Name = "CreateExample")]
@@ -24,6 +24,7 @@ public class ExampleController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> CreateAsync(CreateExampleCommand command, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(command, cancellationToken);
-        return CreatedAtRoute("GetExamples", result);
+        if (result.IsFailure) return BadRequest(result.Error);
+        return CreatedAtRoute("GetExamples", result.Value);
     }
 }

@@ -14,7 +14,7 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetProductsQuery(), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpGet("{id:guid}", Name = "GetProductById")]
@@ -23,7 +23,8 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetProductByIdQuery(id), cancellationToken);
-        return result is null ? NotFound() : Ok(result);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
     }
 
     [HttpGet("gtin/{gtin}", Name = "GetProductByGtin")]
@@ -32,7 +33,8 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetByGtin(string gtin, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetProductByGtinQuery(gtin), cancellationToken);
-        return result is null ? NotFound() : Ok(result);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
     }
 
     [HttpGet("batch/{batchId:guid}", Name = "GetBatchById")]
@@ -41,7 +43,8 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetBatchById(Guid batchId, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetBatchByIdQuery(batchId), cancellationToken);
-        return result is null ? NotFound() : Ok(result);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
     }
 
     [HttpGet("batch/lookup", Name = "LookupBatch")]
@@ -50,7 +53,8 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> LookupBatch([FromQuery] string gtin, [FromQuery] string lot, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new LookupBatchQuery(gtin, lot), cancellationToken);
-        return result is null ? NotFound() : Ok(result);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
     }
 
     [HttpGet("{id:guid}/journey", Name = "GetProductJourney")]
@@ -58,7 +62,7 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetJourney(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetProductJourneyQuery(id), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpGet("{id:guid}/coordinates", Name = "GetProductCoordinates")]
@@ -66,6 +70,6 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetCoordinates(Guid id, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetProductCoordinatesQuery(id), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 }

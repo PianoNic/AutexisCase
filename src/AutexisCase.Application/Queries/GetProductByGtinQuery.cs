@@ -2,32 +2,27 @@ using AutexisCase.Application.Behaviors;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
 using AutexisCase.Application.Mappers;
+using AutexisCase.Application.Models;
 using Mediator;
 using Microsoft.EntityFrameworkCore;
 
 namespace AutexisCase.Application.Queries;
 
 [AllowAuthenticated]
-public record GetProductByGtinQuery(string Gtin) : IQuery<ProductDto?>;
+public record GetProductByGtinQuery(string Gtin) : IQuery<Result<ProductDto>>;
 
-public class GetProductByGtinHandler(IAppDbContext dbContext, IOpenFoodFactsService openFoodFacts) : IQueryHandler<GetProductByGtinQuery, ProductDto?>
+public class GetProductByGtinHandler(IAppDbContext dbContext, IOpenFoodFactsService openFoodFacts) : IQueryHandler<GetProductByGtinQuery, Result<ProductDto>>
 {
-    public async ValueTask<ProductDto?> Handle(GetProductByGtinQuery request, CancellationToken cancellationToken)
+    public async ValueTask<Result<ProductDto>> Handle(GetProductByGtinQuery request, CancellationToken cancellationToken)
     {
-        var product = await dbContext.Products
-            .AsNoTracking()
-            .Include(p => p.Batches)
-            .SingleOrDefaultAsync(p => p.Gtin == request.Gtin, cancellationToken);
+        var product = await dbContext.Products.AsNoTracking().Include(p => p.Batches).SingleOrDefaultAsync(p => p.Gtin == request.Gtin, cancellationToken);
+        if (product is not null) return Result.Success(product.ToDto());
 
-        if (product is not null) return product.ToDto();
-
-        // Auto-fetch from Open Food Facts
         var fetched = await openFoodFacts.FetchProductAsync(request.Gtin, cancellationToken);
-        if (fetched is null) return null;
+        if (fetched is null) return Result.Failure<ProductDto>("Product not found.");
 
         dbContext.Products.Add(fetched);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return fetched.ToDto();
+        return Result.Success(fetched.ToDto());
     }
 }
