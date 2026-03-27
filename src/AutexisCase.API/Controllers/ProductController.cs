@@ -2,6 +2,7 @@ using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
 using AutexisCase.Application.Mappers;
 using AutexisCase.Application.Queries;
+using AutexisCase.Infrastructure.Services;
 using Mediator;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +11,7 @@ namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductController(IMediator mediator, IAppDbContext dbContext) : ControllerBase
+public class ProductController(IMediator mediator, IAppDbContext dbContext, OpenFoodFactsService openFoodFacts) : ControllerBase
 {
     [HttpGet(Name = "GetProducts")]
     [ProducesResponseType(typeof(List<ProductSummaryDto>), StatusCodes.Status200OK)]
@@ -35,7 +36,19 @@ public class ProductController(IMediator mediator, IAppDbContext dbContext) : Co
     public async Task<IActionResult> GetByGtin(string gtin, CancellationToken cancellationToken)
     {
         var product = await mediator.Send(new GetProductByGtinQuery(gtin), cancellationToken);
-        return product is null ? NotFound() : Ok(product);
+
+        if (product is null)
+        {
+            var fetched = await openFoodFacts.FetchProductAsync(gtin, cancellationToken);
+            if (fetched is null) return NotFound();
+
+            dbContext.Products.Add(fetched);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            product = fetched.ToDto();
+        }
+
+        return Ok(product);
     }
 
     [HttpGet("batch/{batchId:guid}", Name = "GetBatchById")]
