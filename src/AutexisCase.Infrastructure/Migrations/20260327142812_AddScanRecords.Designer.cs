@@ -3,6 +3,7 @@ using System;
 using AutexisCase.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AutexisCase.Infrastructure.Migrations
 {
     [DbContext(typeof(AutexisCaseDbContext))]
-    partial class AutexisCaseDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327142812_AddScanRecords")]
+    partial class AddScanRecords
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -28,14 +31,14 @@ namespace AutexisCase.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("Read")
                         .HasColumnType("boolean");
@@ -58,60 +61,9 @@ namespace AutexisCase.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("Alerts");
-                });
-
-            modelBuilder.Entity("AutexisCase.Domain.Batch", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("Co2Kg")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("DaysRemaining")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("ExpiryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("LotNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("ProductionDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("RiskScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("ShelfLifeDays")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal?>("WaterLiters")
-                        .HasColumnType("numeric");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId", "LotNumber")
-                        .IsUnique();
-
-                    b.ToTable("Batches");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.Example", b =>
@@ -144,9 +96,6 @@ namespace AutexisCase.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal?>("Co2Kg")
                         .HasColumnType("numeric");
 
@@ -172,6 +121,9 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -193,7 +145,7 @@ namespace AutexisCase.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("JourneyEvents");
                 });
@@ -207,14 +159,14 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<decimal>("Percentage")
                         .HasColumnType("numeric");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Stage")
                         .IsRequired()
@@ -225,7 +177,7 @@ namespace AutexisCase.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("PriceSteps");
                 });
@@ -247,8 +199,14 @@ namespace AutexisCase.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("jsonb");
 
+                    b.Property<decimal?>("Co2Kg")
+                        .HasColumnType("numeric");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("DaysRemaining")
+                        .HasColumnType("integer");
 
                     b.Property<string>("EcoScore")
                         .HasColumnType("text");
@@ -273,8 +231,20 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.Property<string>("Origin")
                         .HasColumnType("text");
 
+                    b.Property<int>("RiskScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ShelfLifeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("WaterLiters")
+                        .HasColumnType("numeric");
 
                     b.Property<string>("Weight")
                         .HasColumnType("text");
@@ -323,14 +293,14 @@ namespace AutexisCase.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BatchId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Location")
                         .HasColumnType("text");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Temperature")
                         .HasColumnType("numeric");
@@ -343,7 +313,7 @@ namespace AutexisCase.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BatchId");
+                    b.HasIndex("ProductId");
 
                     b.ToTable("TemperatureLogs");
                 });
@@ -407,19 +377,8 @@ namespace AutexisCase.Infrastructure.Migrations
 
             modelBuilder.Entity("AutexisCase.Domain.Alert", b =>
                 {
-                    b.HasOne("AutexisCase.Domain.Batch", "Batch")
-                        .WithMany("Alerts")
-                        .HasForeignKey("BatchId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Batch");
-                });
-
-            modelBuilder.Entity("AutexisCase.Domain.Batch", b =>
-                {
                     b.HasOne("AutexisCase.Domain.Product", "Product")
-                        .WithMany("Batches")
+                        .WithMany("Alerts")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -429,24 +388,24 @@ namespace AutexisCase.Infrastructure.Migrations
 
             modelBuilder.Entity("AutexisCase.Domain.JourneyEvent", b =>
                 {
-                    b.HasOne("AutexisCase.Domain.Batch", "Batch")
+                    b.HasOne("AutexisCase.Domain.Product", "Product")
                         .WithMany("JourneyEvents")
-                        .HasForeignKey("BatchId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Batch");
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.PriceStep", b =>
                 {
-                    b.HasOne("AutexisCase.Domain.Batch", "Batch")
+                    b.HasOne("AutexisCase.Domain.Product", "Product")
                         .WithMany("PriceBreakdown")
-                        .HasForeignKey("BatchId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Batch");
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.Product", b =>
@@ -513,13 +472,13 @@ namespace AutexisCase.Infrastructure.Migrations
 
             modelBuilder.Entity("AutexisCase.Domain.TemperatureLog", b =>
                 {
-                    b.HasOne("AutexisCase.Domain.Batch", "Batch")
+                    b.HasOne("AutexisCase.Domain.Product", "Product")
                         .WithMany("TemperatureLogs")
-                        .HasForeignKey("BatchId")
+                        .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Batch");
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.UserRoleAssignment", b =>
@@ -533,7 +492,7 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("AutexisCase.Domain.Batch", b =>
+            modelBuilder.Entity("AutexisCase.Domain.Product", b =>
                 {
                     b.Navigation("Alerts");
 
@@ -542,11 +501,6 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.Navigation("PriceBreakdown");
 
                     b.Navigation("TemperatureLogs");
-                });
-
-            modelBuilder.Entity("AutexisCase.Domain.Product", b =>
-                {
-                    b.Navigation("Batches");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.User", b =>

@@ -17,6 +17,7 @@ public interface IAppDbContext
     DbSet<PriceStep> PriceSteps { get; }
     DbSet<TemperatureLog> TemperatureLogs { get; }
     DbSet<Alert> Alerts { get; }
+    DbSet<ScanRecord> ScanRecords { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
