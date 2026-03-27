@@ -16,7 +16,8 @@ public class ScanController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> RecordScan(string gtin, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new RecordScanCommand(gtin), cancellationToken);
-        return result is null ? NotFound() : Ok(result);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
     }
 
     [HttpGet("recent", Name = "GetRecentScans")]
@@ -24,7 +25,7 @@ public class ScanController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetRecentScans(CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetRecentScansQuery(), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 
     [HttpGet("alerts", Name = "GetMyAlerts")]
@@ -32,6 +33,6 @@ public class ScanController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetMyAlerts(CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetMyAlertsQuery(), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 }

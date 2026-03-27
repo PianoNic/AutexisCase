@@ -1,6 +1,7 @@
 using AutexisCase.Application.Behaviors;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
+using AutexisCase.Application.Models;
 using AutexisCase.Domain;
 using FluentValidation;
 using Mediator;
@@ -8,7 +9,7 @@ using Mediator;
 namespace AutexisCase.Application.Commands;
 
 [AllowAuthenticated]
-public record CreateExampleCommand(string Title, string? Description) : ICommand<ExampleDto>;
+public record CreateExampleCommand(string Title, string? Description) : ICommand<Result<ExampleDto>>;
 
 public class CreateExampleValidator : AbstractValidator<CreateExampleCommand>
 {
@@ -19,19 +20,13 @@ public class CreateExampleValidator : AbstractValidator<CreateExampleCommand>
     }
 }
 
-public class CreateExampleHandler(IAppDbContext dbContext) : ICommandHandler<CreateExampleCommand, ExampleDto>
+public class CreateExampleHandler(IAppDbContext dbContext) : ICommandHandler<CreateExampleCommand, Result<ExampleDto>>
 {
-    public async ValueTask<ExampleDto> Handle(CreateExampleCommand request, CancellationToken cancellationToken)
+    public async ValueTask<Result<ExampleDto>> Handle(CreateExampleCommand request, CancellationToken cancellationToken)
     {
-        var example = new Example
-        {
-            Title = request.Title,
-            Description = request.Description
-        };
-
+        var example = new Example { Title = request.Title, Description = request.Description };
         dbContext.Examples.Add(example);
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        return new ExampleDto(example.Id, example.Title, example.Description, example.CreatedAt);
+        return Result.Success(new ExampleDto(example.Id, example.Title, example.Description, example.CreatedAt));
     }
 }

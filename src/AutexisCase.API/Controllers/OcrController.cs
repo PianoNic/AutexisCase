@@ -20,6 +20,6 @@ public class OcrController(IMediator mediator) : ControllerBase
         await image.CopyToAsync(ms, cancellationToken);
 
         var result = await mediator.Send(new ExtractLotCommand(ms.ToArray()), cancellationToken);
-        return Ok(result);
+        return Ok(result.Value);
     }
 }
