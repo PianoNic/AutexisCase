@@ -11,16 +11,3 @@ public record ScanRecordDto(
     ProductStatus ProductStatus,
     DateTime ScannedAt
 );
-
-public record JourneyCoordinatesDto(
-    Guid ProductId,
-    List<CoordinateDto> Coordinates
-);
-
-public record CoordinateDto(
-    string Step,
-    string Location,
-    double Latitude,
-    double Longitude,
-    int Status
-);

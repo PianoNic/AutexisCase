@@ -38,6 +38,7 @@ export default function ScanScreen() {
   }, [accessToken])
 
   useEffect(() => {
+    let started = false
     const scanner = new Html5Qrcode('scanner-region')
     scannerRef.current = scanner
 
@@ -62,10 +63,10 @@ export default function ScanScreen() {
         navigate(`/product?gtin=${decodedText}`)
       },
       () => {}
-    ).catch(() => setError('Camera access denied'))
+    ).then(() => { started = true }).catch(() => setError('Camera access denied'))
 
     return () => {
-      scanner.stop().catch(() => {})
+      if (started) scanner.stop().catch(() => {})
     }
   }, [])
 
