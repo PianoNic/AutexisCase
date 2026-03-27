@@ -21,7 +21,6 @@ import type { ProductDto } from '@/api/models/ProductDto'
 import type { BatchDto } from '@/api/models/BatchDto'
 import type { JourneyEventDto } from '@/api/models/JourneyEventDto'
 import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from '@/data/mock-ai'
-import { useChat } from '@/context/ChatContext'
 import { ShelfLifeCard } from '@/components/product/ShelfLifeCard'
 import { AlternativesCard } from '@/components/product/AlternativesCard'
 
@@ -47,7 +46,6 @@ export default function ProductScreen() {
   const { id: routeId } = useParams<{ id: string }>()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { setProductContext } = useChat()
 
   const qId = searchParams.get('id')
   const qGtin = searchParams.get('gtin')
@@ -63,11 +61,6 @@ export default function ProductScreen() {
   const anomalyResult = getAnomalyDetection(productId)
   const sustainability = getSustainabilityAnalysis(productId)
   const alternatives = getProductAlternatives(productId)
-
-  useEffect(() => {
-    setProductContext(productId || null)
-    return () => setProductContext(null)
-  }, [productId, setProductContext])
 
   useEffect(() => {
     setLoading(true)
@@ -259,7 +252,7 @@ export default function ProductScreen() {
         {/* Floating back + product name */}
         <div className="absolute left-0 right-0 top-0 z-20 flex items-center gap-3 px-4 pt-12">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/')}
             className="flex h-9 w-9 items-center justify-center rounded-full bg-background/90 border shadow-sm"
           >
             <ArrowLeft className="h-4 w-4" />

@@ -46,6 +46,7 @@ export default function ScanScreen() {
   const [error, setError] = useState<string | null>(null)
   const [showManual, setShowManual] = useState(false)
   const [barcode, setBarcode] = useState('')
+  const [foundCode, setFoundCode] = useState<string | null>(null)
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([])
   const [cameraIdx, setCameraIdx] = useState(0)
   const streamRef = useRef<MediaStream | null>(null)
@@ -54,6 +55,7 @@ export default function ScanScreen() {
   const handleFound = useCallback(async (gtin: string) => {
     if (foundRef.current) return
     foundRef.current = true
+    setFoundCode(gtin)
 
     if (accessToken) {
       try {
@@ -64,57 +66,55 @@ export default function ScanScreen() {
       } catch { /* best effort */ }
     }
 
-    navigate(`/scan/lot?gtin=${gtin}`)
+    // Show confirmation briefly, then navigate
+    setTimeout(() => navigate(`/scan/lot?gtin=${gtin}`), 1200)
   }, [accessToken, navigate])
 
   const startCamera = useCallback(async (deviceId?: string) => {
     streamRef.current?.getTracks().forEach(t => t.stop())
 
-    const videoConstraints: MediaTrackConstraints & Record<string, unknown> = deviceId
+    const baseConstraints: MediaTrackConstraints = deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
       : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
 
-    videoConstraints.focusMode = 'continuous'
+    // Try with focusMode first (Samsung needs it), fall back without
+    const attempts: MediaTrackConstraints[] = [
+      { ...baseConstraints, ...({ focusMode: 'continuous' } as any) },
+      baseConstraints,
+      ...(deviceId ? [] : [{ facingMode: 'user' as const }]),
+    ]
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-        await videoRef.current.play()
-      }
-
-      const track = stream.getVideoTracks()[0]
-      if (track) {
-        const caps = track.getCapabilities?.() as any
-        const settings: any = {}
-        if (caps?.focusMode?.includes?.('continuous')) settings.focusMode = 'continuous'
-        if (caps?.exposureMode?.includes?.('continuous')) settings.exposureMode = 'continuous'
-        if (Object.keys(settings).length > 0) {
-          try { await track.applyConstraints({ advanced: [settings] }) } catch { /* unsupported */ }
+    for (const constraints of attempts) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false })
+        streamRef.current = stream
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+          await videoRef.current.play()
         }
-      }
 
-      setError(null)
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      setCameras(devices.filter(d => d.kind === 'videoinput'))
-    } catch {
-      if (!deviceId) {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
-          streamRef.current = stream
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream
-            await videoRef.current.play()
+        // Try to enable autofocus via applyConstraints
+        const track = stream.getVideoTracks()[0]
+        if (track) {
+          const caps = track.getCapabilities?.() as any
+          const settings: any = {}
+          if (caps?.focusMode?.includes?.('continuous')) settings.focusMode = 'continuous'
+          if (caps?.exposureMode?.includes?.('continuous')) settings.exposureMode = 'continuous'
+          if (Object.keys(settings).length > 0) {
+            try { await track.applyConstraints({ advanced: [settings] }) } catch { /* unsupported */ }
           }
-          setError(null)
-        } catch {
-          setError('Kamera-Zugriff verweigert')
         }
-      } else {
-        setError('Kamera-Zugriff verweigert')
+
+        setError(null)
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        setCameras(devices.filter(d => d.kind === 'videoinput'))
+        return // success
+      } catch {
+        continue // try next
       }
     }
+
+    setError('Kamera-Zugriff verweigert')
   }, [])
 
   useEffect(() => {
@@ -189,7 +189,21 @@ export default function ScanScreen() {
 
       {/* Center content */}
       <div className="absolute inset-0 flex items-center justify-center">
-        {showManual ? (
+        {foundCode ? (
+          /* Barcode found confirmation */
+          <div className="text-center space-y-3">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/20 backdrop-blur-md">
+              <svg className="h-8 w-8 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">Barcode erkannt</p>
+              <p className="text-lg font-mono text-white/80 mt-1">{foundCode}</p>
+            </div>
+            <p className="text-xs text-white/50">Weiter zur Chargennummer...</p>
+          </div>
+        ) : showManual ? (
           <div className="w-64 space-y-3">
             <input
               placeholder="EAN eingeben..."
