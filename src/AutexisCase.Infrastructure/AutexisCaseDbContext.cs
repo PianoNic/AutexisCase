@@ -18,6 +18,7 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
     public DbSet<PriceStep> PriceSteps => Set<PriceStep>();
     public DbSet<TemperatureLog> TemperatureLogs => Set<TemperatureLog>();
     public DbSet<Alert> Alerts => Set<Alert>();
+    public DbSet<ScanRecord> ScanRecords => Set<ScanRecord>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
