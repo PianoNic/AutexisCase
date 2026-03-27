@@ -122,6 +122,22 @@ public record CoordinateDto(
     int Status
 );
 
+public record RouteSegmentDto(
+    string FromStep,
+    string ToStep,
+    string FromLocation,
+    string ToLocation,
+    List<double[]> Points
+);
+
+public record RouteDto(
+    List<RouteSegmentDto> Segments
+);
+
+public record PointToPointRouteDto(
+    List<double[]> Points
+);
+
 public record OcrResultDto(
     string? LotNumber,
     bool Success

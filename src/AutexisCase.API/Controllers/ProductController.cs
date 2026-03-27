@@ -72,4 +72,22 @@ public class ProductController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new GetProductCoordinatesQuery(id), cancellationToken);
         return Ok(result.Value);
     }
+
+    [HttpGet("batch/{batchId:guid}/route", Name = "GetBatchRoute")]
+    [ProducesResponseType(typeof(RouteDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBatchRoute(Guid batchId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetBatchRouteQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("route", Name = "GetPointToPointRoute")]
+    [ProducesResponseType(typeof(PointToPointRouteDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRoute([FromQuery] double fromLat, [FromQuery] double fromLon, [FromQuery] double toLat, [FromQuery] double toLon, [FromQuery] string profile = "driving-hgv", CancellationToken cancellationToken = default)
+    {
+        var result = await mediator.Send(new GetPointToPointRouteQuery(fromLat, fromLon, toLat, toLon, profile), cancellationToken);
+        return Ok(result.Value);
+    }
 }
