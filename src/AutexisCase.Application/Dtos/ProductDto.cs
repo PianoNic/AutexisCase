@@ -15,17 +15,8 @@ public record ProductDto(
     string? NutriScore,
     int? NovaGroup,
     string? EcoScore,
-    int RiskScore,
-    int? ShelfLifeDays,
-    int? DaysRemaining,
-    decimal? Co2Kg,
-    decimal? WaterLiters,
-    ProductStatus Status,
     NutritionDto Nutrition,
-    List<JourneyEventDto> JourneyEvents,
-    List<PriceStepDto> PriceBreakdown,
-    List<TemperatureLogDto> TemperatureLogs,
-    List<AlertDto> Alerts
+    List<BatchSummaryDto> Batches
 );
 
 public record ProductSummaryDto(
@@ -35,9 +26,34 @@ public record ProductSummaryDto(
     string Brand,
     string? ImageUrl,
     string? Category,
+    string? NutriScore
+);
+
+public record BatchDto(
+    Guid Id,
+    Guid ProductId,
+    string LotNumber,
     ProductStatus Status,
-    string? NutriScore,
-    int RiskScore
+    int RiskScore,
+    int? ShelfLifeDays,
+    int? DaysRemaining,
+    decimal? Co2Kg,
+    decimal? WaterLiters,
+    DateTime? ProductionDate,
+    DateTime? ExpiryDate,
+    ProductSummaryDto Product,
+    List<JourneyEventDto> JourneyEvents,
+    List<PriceStepDto> PriceBreakdown,
+    List<TemperatureLogDto> TemperatureLogs,
+    List<AlertDto> Alerts
+);
+
+public record BatchSummaryDto(
+    Guid Id,
+    string LotNumber,
+    ProductStatus Status,
+    int RiskScore,
+    DateTime? ExpiryDate
 );
 
 public record NutritionDto(
@@ -89,4 +105,22 @@ public record AlertDto(
     string? Description,
     DateTime Timestamp,
     bool Read
+);
+
+public record JourneyCoordinatesDto(
+    Guid ProductId,
+    List<CoordinateDto> Coordinates
+);
+
+public record CoordinateDto(
+    string Step,
+    string Location,
+    double Latitude,
+    double Longitude,
+    int Status
+);
+
+public record OcrResultDto(
+    string? LotNumber,
+    bool Success
 );

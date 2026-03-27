@@ -13,14 +13,6 @@
  */
 
 import { mapValues } from '../runtime';
-import type { ProductStatus } from './ProductStatus';
-import {
-    ProductStatusFromJSON,
-    ProductStatusFromJSONTyped,
-    ProductStatusToJSON,
-    ProductStatusToJSONTyped,
-} from './ProductStatus';
-
 /**
  * 
  * @export
@@ -65,25 +57,11 @@ export interface ProductSummaryDto {
     category?: string | null;
     /**
      * 
-     * @type {ProductStatus}
-     * @memberof ProductSummaryDto
-     */
-    status?: ProductStatus;
-    /**
-     * 
      * @type {string}
      * @memberof ProductSummaryDto
      */
     nutriScore?: string | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof ProductSummaryDto
-     */
-    riskScore?: number;
 }
-
-
 
 /**
  * Check if a given object implements the ProductSummaryDto interface.
@@ -108,9 +86,7 @@ export function ProductSummaryDtoFromJSONTyped(json: any, ignoreDiscriminator: b
         'brand': json['brand'] == null ? undefined : json['brand'],
         'imageUrl': json['imageUrl'] == null ? undefined : json['imageUrl'],
         'category': json['category'] == null ? undefined : json['category'],
-        'status': json['status'] == null ? undefined : ProductStatusFromJSON(json['status']),
         'nutriScore': json['nutriScore'] == null ? undefined : json['nutriScore'],
-        'riskScore': json['riskScore'] == null ? undefined : json['riskScore'],
     };
 }
 
@@ -131,9 +107,7 @@ export function ProductSummaryDtoToJSONTyped(value?: ProductSummaryDto | null, i
         'brand': value['brand'],
         'imageUrl': value['imageUrl'],
         'category': value['category'],
-        'status': ProductStatusToJSON(value['status']),
         'nutriScore': value['nutriScore'],
-        'riskScore': value['riskScore'],
     };
 }
 

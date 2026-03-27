@@ -27,6 +27,7 @@ builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
+builder.Services.AddSingleton<OcrService>();
 
 
 // Mediator, Validation & Authorization

@@ -3,6 +3,7 @@ using System;
 using AutexisCase.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AutexisCase.Infrastructure.Migrations
 {
     [DbContext(typeof(AutexisCaseDbContext))]
-    partial class AutexisCaseDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260327144011_AddBatchEntity")]
+    partial class AddBatchEntity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -287,36 +290,6 @@ namespace AutexisCase.Infrastructure.Migrations
                     b.ToTable("Products");
                 });
 
-            modelBuilder.Entity("AutexisCase.Domain.ScanRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ProductId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("ScannedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("ScanRecords");
-                });
-
             modelBuilder.Entity("AutexisCase.Domain.TemperatureLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -490,25 +463,6 @@ namespace AutexisCase.Infrastructure.Migrations
 
                     b.Navigation("Nutrition")
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("AutexisCase.Domain.ScanRecord", b =>
-                {
-                    b.HasOne("AutexisCase.Domain.Product", "Product")
-                        .WithMany()
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("AutexisCase.Domain.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Product");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("AutexisCase.Domain.TemperatureLog", b =>

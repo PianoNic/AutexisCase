@@ -13,13 +13,13 @@
  */
 
 import { mapValues } from '../runtime';
-import type { AlertDto } from './AlertDto';
+import type { BatchSummaryDto } from './BatchSummaryDto';
 import {
-    AlertDtoFromJSON,
-    AlertDtoFromJSONTyped,
-    AlertDtoToJSON,
-    AlertDtoToJSONTyped,
-} from './AlertDto';
+    BatchSummaryDtoFromJSON,
+    BatchSummaryDtoFromJSONTyped,
+    BatchSummaryDtoToJSON,
+    BatchSummaryDtoToJSONTyped,
+} from './BatchSummaryDto';
 import type { NutritionDto } from './NutritionDto';
 import {
     NutritionDtoFromJSON,
@@ -27,34 +27,6 @@ import {
     NutritionDtoToJSON,
     NutritionDtoToJSONTyped,
 } from './NutritionDto';
-import type { TemperatureLogDto } from './TemperatureLogDto';
-import {
-    TemperatureLogDtoFromJSON,
-    TemperatureLogDtoFromJSONTyped,
-    TemperatureLogDtoToJSON,
-    TemperatureLogDtoToJSONTyped,
-} from './TemperatureLogDto';
-import type { PriceStepDto } from './PriceStepDto';
-import {
-    PriceStepDtoFromJSON,
-    PriceStepDtoFromJSONTyped,
-    PriceStepDtoToJSON,
-    PriceStepDtoToJSONTyped,
-} from './PriceStepDto';
-import type { ProductStatus } from './ProductStatus';
-import {
-    ProductStatusFromJSON,
-    ProductStatusFromJSONTyped,
-    ProductStatusToJSON,
-    ProductStatusToJSONTyped,
-} from './ProductStatus';
-import type { JourneyEventDto } from './JourneyEventDto';
-import {
-    JourneyEventDtoFromJSON,
-    JourneyEventDtoFromJSONTyped,
-    JourneyEventDtoToJSON,
-    JourneyEventDtoToJSONTyped,
-} from './JourneyEventDto';
 
 /**
  * 
@@ -136,73 +108,17 @@ export interface ProductDto {
     ecoScore?: string | null;
     /**
      * 
-     * @type {number}
-     * @memberof ProductDto
-     */
-    riskScore?: number;
-    /**
-     * 
-     * @type {number}
-     * @memberof ProductDto
-     */
-    shelfLifeDays?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof ProductDto
-     */
-    daysRemaining?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof ProductDto
-     */
-    co2Kg?: number | null;
-    /**
-     * 
-     * @type {number}
-     * @memberof ProductDto
-     */
-    waterLiters?: number | null;
-    /**
-     * 
-     * @type {ProductStatus}
-     * @memberof ProductDto
-     */
-    status?: ProductStatus;
-    /**
-     * 
      * @type {NutritionDto}
      * @memberof ProductDto
      */
     nutrition?: NutritionDto;
     /**
      * 
-     * @type {Array<JourneyEventDto>}
+     * @type {Array<BatchSummaryDto>}
      * @memberof ProductDto
      */
-    journeyEvents?: Array<JourneyEventDto> | null;
-    /**
-     * 
-     * @type {Array<PriceStepDto>}
-     * @memberof ProductDto
-     */
-    priceBreakdown?: Array<PriceStepDto> | null;
-    /**
-     * 
-     * @type {Array<TemperatureLogDto>}
-     * @memberof ProductDto
-     */
-    temperatureLogs?: Array<TemperatureLogDto> | null;
-    /**
-     * 
-     * @type {Array<AlertDto>}
-     * @memberof ProductDto
-     */
-    alerts?: Array<AlertDto> | null;
+    batches?: Array<BatchSummaryDto> | null;
 }
-
-
 
 /**
  * Check if a given object implements the ProductDto interface.
@@ -233,17 +149,8 @@ export function ProductDtoFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'nutriScore': json['nutriScore'] == null ? undefined : json['nutriScore'],
         'novaGroup': json['novaGroup'] == null ? undefined : json['novaGroup'],
         'ecoScore': json['ecoScore'] == null ? undefined : json['ecoScore'],
-        'riskScore': json['riskScore'] == null ? undefined : json['riskScore'],
-        'shelfLifeDays': json['shelfLifeDays'] == null ? undefined : json['shelfLifeDays'],
-        'daysRemaining': json['daysRemaining'] == null ? undefined : json['daysRemaining'],
-        'co2Kg': json['co2Kg'] == null ? undefined : json['co2Kg'],
-        'waterLiters': json['waterLiters'] == null ? undefined : json['waterLiters'],
-        'status': json['status'] == null ? undefined : ProductStatusFromJSON(json['status']),
         'nutrition': json['nutrition'] == null ? undefined : NutritionDtoFromJSON(json['nutrition']),
-        'journeyEvents': json['journeyEvents'] == null ? undefined : ((json['journeyEvents'] as Array<any>).map(JourneyEventDtoFromJSON)),
-        'priceBreakdown': json['priceBreakdown'] == null ? undefined : ((json['priceBreakdown'] as Array<any>).map(PriceStepDtoFromJSON)),
-        'temperatureLogs': json['temperatureLogs'] == null ? undefined : ((json['temperatureLogs'] as Array<any>).map(TemperatureLogDtoFromJSON)),
-        'alerts': json['alerts'] == null ? undefined : ((json['alerts'] as Array<any>).map(AlertDtoFromJSON)),
+        'batches': json['batches'] == null ? undefined : ((json['batches'] as Array<any>).map(BatchSummaryDtoFromJSON)),
     };
 }
 
@@ -270,17 +177,8 @@ export function ProductDtoToJSONTyped(value?: ProductDto | null, ignoreDiscrimin
         'nutriScore': value['nutriScore'],
         'novaGroup': value['novaGroup'],
         'ecoScore': value['ecoScore'],
-        'riskScore': value['riskScore'],
-        'shelfLifeDays': value['shelfLifeDays'],
-        'daysRemaining': value['daysRemaining'],
-        'co2Kg': value['co2Kg'],
-        'waterLiters': value['waterLiters'],
-        'status': ProductStatusToJSON(value['status']),
         'nutrition': NutritionDtoToJSON(value['nutrition']),
-        'journeyEvents': value['journeyEvents'] == null ? undefined : ((value['journeyEvents'] as Array<any>).map(JourneyEventDtoToJSON)),
-        'priceBreakdown': value['priceBreakdown'] == null ? undefined : ((value['priceBreakdown'] as Array<any>).map(PriceStepDtoToJSON)),
-        'temperatureLogs': value['temperatureLogs'] == null ? undefined : ((value['temperatureLogs'] as Array<any>).map(TemperatureLogDtoToJSON)),
-        'alerts': value['alerts'] == null ? undefined : ((value['alerts'] as Array<any>).map(AlertDtoToJSON)),
+        'batches': value['batches'] == null ? undefined : ((value['batches'] as Array<any>).map(BatchSummaryDtoToJSON)),
     };
 }
 

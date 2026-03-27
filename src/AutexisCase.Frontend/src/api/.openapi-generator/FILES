@@ -1,6 +1,7 @@
 apis/AppApi.ts
 apis/AuthApi.ts
 apis/ExampleApi.ts
+apis/OcrApi.ts
 apis/ProductApi.ts
 apis/index.ts
 index.ts
@@ -8,11 +9,16 @@ models/AlertDto.ts
 models/AlertSeverity.ts
 models/AlertType.ts
 models/AppConfigDto.ts
+models/BatchDto.ts
+models/BatchSummaryDto.ts
+models/CoordinateDto.ts
 models/CreateExampleCommand.ts
 models/ExampleDto.ts
+models/JourneyCoordinatesDto.ts
 models/JourneyEventDto.ts
 models/JourneyStatus.ts
 models/NutritionDto.ts
+models/OcrResultDto.ts
 models/PriceStepDto.ts
 models/ProblemDetails.ts
 models/ProductDto.ts
