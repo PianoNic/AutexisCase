@@ -1,192 +1,127 @@
-import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Separator } from '@/components/ui/separator'
-import { useAppAuth } from '@/auth/use-app-auth'
+import { ChevronRight, ScanLine, Award } from 'lucide-react'
+import { scanHistory, globalAlerts } from '@/data/mock'
 
-interface ProductSummary {
-  id: string
-  gtin: string
-  name: string
-  brand: string
-  imageUrl: string | null
-  category: string | null
-  status: number
-  nutriScore: string | null
-  riskScore: number
+const nutriColors: Record<string, string> = {
+  A: 'bg-emerald-500',
+  B: 'bg-lime-500',
+  C: 'bg-yellow-500',
+  D: 'bg-orange-500',
+  E: 'bg-red-500',
 }
 
-interface AlertItem {
-  id: string
-  type: number
-  severity: number
-  title: string
-  description: string | null
-  timestamp: string
-  read: boolean
-  productId: string
-}
-
-const statusMap: Record<number, { label: string; variant: 'default' | 'destructive' | 'secondary' }> = {
-  0: { label: 'OK', variant: 'default' },
-  1: { label: 'Warning', variant: 'secondary' },
-  2: { label: 'Recall', variant: 'destructive' },
-}
-
-const statusDot: Record<number, string> = {
-  0: 'bg-primary',
-  1: 'bg-amber-500',
-  2: 'bg-destructive',
-}
-
-const severityVariant: Record<number, 'default' | 'destructive'> = {
-  0: 'default',
-  1: 'default',
-  2: 'destructive',
-}
-
-function getInitials(name: string) {
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function timeAgo(timestamp: string) {
-  const diff = Date.now() - new Date(timestamp).getTime()
-  const days = Math.floor(diff / 86400000)
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return new Date(timestamp).toLocaleDateString('en', { weekday: 'short' })
-  return new Date(timestamp).toLocaleDateString('en', { month: 'short', day: 'numeric' })
+const severityDot: Record<string, string> = {
+  Critical: 'bg-red-500',
+  Warning: 'bg-amber-500',
+  Info: 'bg-blue-500',
 }
 
 export default function HomeScreen() {
   const navigate = useNavigate()
-  const { user, accessToken } = useAppAuth()
-  const [products, setProducts] = useState<ProductSummary[]>([])
-  const [alerts, setAlerts] = useState<AlertItem[]>([])
-
-  useEffect(() => {
-    if (!accessToken) return
-    const headers = { Authorization: `Bearer ${accessToken}` }
-
-    fetch('/api/Scan/recent', { headers })
-      .then(r => r.ok ? r.json() : [])
-      .then((scans: any[]) => {
-        const seen = new Set<string>()
-        const unique = scans.filter((s: any) => {
-          if (seen.has(s.productId)) return false
-          seen.add(s.productId)
-          return true
-        })
-        setProducts(unique.map((s: any) => ({
-          id: s.productId,
-          gtin: '',
-          name: s.productName,
-          brand: s.productBrand,
-          imageUrl: s.productImageUrl,
-          category: null,
-          status: s.productStatus,
-          nutriScore: null,
-          riskScore: 0,
-        })))
-      })
-      .catch(console.error)
-
-    fetch('/api/Scan/alerts', { headers })
-      .then(r => r.ok ? r.json() : [])
-      .then(setAlerts)
-      .catch(console.error)
-  }, [accessToken])
+  const activeAlerts = globalAlerts.filter((a) => !a.read)
+  const bioCount = scanHistory.filter((s) => s.nutriScore === 'A').length
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-12 pb-5">
-          <div className="flex items-center gap-2 flex-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
-              <svg className="h-4 w-4 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2a9 9 0 0 1 9 9c0 5.25-9 13-9 13S3 16.25 3 11a9 9 0 0 1 9-9z" />
-                <circle cx="12" cy="11" r="3" />
-              </svg>
-            </div>
-            <span className="text-sm font-semibold tracking-tight">Track my Food</span>
+      {/* Header */}
+      <div className="px-4 pt-12 pb-2 shrink-0">
+        <p className="text-sm text-muted-foreground">
+          {new Date().getHours() < 12 ? 'Guten Morgen' : new Date().getHours() < 18 ? 'Guten Tag' : 'Guten Abend'}
+        </p>
+        <h1 className="text-xl font-bold tracking-tight">Track my Food</h1>
+      </div>
+
+      <div className="px-4 space-y-4 shrink-0">
+        {/* Stats summary */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border p-2.5 text-center">
+            <ScanLine className="h-3.5 w-3.5 mx-auto mb-0.5 text-primary" />
+            <p className="text-lg font-bold">{scanHistory.length}</p>
+            <p className="text-[11px] text-muted-foreground leading-tight">Produkte gescannt</p>
           </div>
-          {user && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground hidden sm:block">{user.displayName}</span>
-              <Avatar size="sm">
-                {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
-                <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
-              </Avatar>
+          <div className="rounded-xl border p-2.5 text-center">
+            <Award className="h-3.5 w-3.5 mx-auto mb-0.5 text-emerald-500" />
+            <p className="text-lg font-bold">
+              {bioCount}/{scanHistory.length}
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-tight">Nutri-Score A</p>
+          </div>
+        </div>
+
+        {/* Alerts */}
+        {activeAlerts.length > 0 && (
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Hinweise</p>
+            <div className="rounded-xl border divide-y">
+              {activeAlerts.map((a) => {
+                const productId = a.productName.includes('Tomaten')
+                  ? 'tomatoes'
+                  : a.productName.includes('Zartbitter')
+                    ? 'chocolate'
+                    : undefined
+                return (
+                  <button
+                    key={a.id}
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
+                    onClick={() => productId && navigate(`/product/${productId}`)}
+                  >
+                    <div className="relative">
+                      <img
+                        src={a.productImage}
+                        alt={a.productName}
+                        className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                      />
+                      <div
+                        className={`absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background ${severityDot[a.severity]}`}
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{a.productName}</p>
+                      <p className="text-[10px] text-amber-600 truncate">{a.title}</p>
+                    </div>
+                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  </button>
+                )
+              })}
             </div>
-          )}
-        </div>
-
-        <div className="px-4 space-y-5 pb-4">
-          {/* Alerts */}
-          {alerts.length > 0 && (
-            <section className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Alerts</p>
-              {alerts.map((alert) => (
-                <Alert key={alert.id} variant={severityVariant[alert.severity] ?? 'default'}>
-                  <AlertTitle>{alert.title}</AlertTitle>
-                  {alert.description && <AlertDescription>{alert.description}</AlertDescription>}
-                </Alert>
-              ))}
-            </section>
-          )}
-
-          {/* Products */}
-          <section className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Products</p>
-            {products.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No products yet. Scan one to get started.</p>
-            ) : (
-              <Card size="sm">
-                <CardContent className="!px-0 !py-0">
-                  {products.map((item, i) => {
-                    const status = statusMap[item.status] ?? statusMap[0]
-                    return (
-                      <div key={item.id}>
-                        <button
-                          onClick={() => navigate(`/product?id=${item.id}`)}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
-                        >
-                          <div className={`h-2 w-2 rounded-full shrink-0 ${statusDot[item.status] ?? 'bg-primary'}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">{item.brand}</p>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {item.nutriScore && <span className="text-xs text-muted-foreground">Nutri {item.nutriScore}</span>}
-                            <Badge variant={status.variant}>{status.label}</Badge>
-                          </div>
-                        </button>
-                        {i < products.length - 1 && <Separator />}
-                      </div>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-            )}
           </section>
-        </div>
+        )}
       </div>
 
-      {/* Fixed bottom scan button */}
-      <div className="shrink-0 px-4 py-4 border-t border-border bg-background">
-        <Button className="w-full" size="lg" onClick={() => navigate('/scan')}>
-          <svg className="mr-1.5 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-            <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" />
-            <rect x="7" y="7" width="10" height="10" rx="1" />
-          </svg>
-          Scan Product
-        </Button>
-      </div>
+      {/* Scan history — fills remaining height */}
+      <section className="flex-1 min-h-0 flex flex-col px-4 pt-4 pb-20">
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2 shrink-0">Letzte Scans</p>
+        <div className="rounded-xl border divide-y overflow-y-auto">
+          {scanHistory.map((s) => {
+            const productId = s.id === 'tomatoes' || s.id === 'chocolate' ? s.id : 'tomatoes'
+            return (
+              <button
+                key={s.id}
+                className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
+                onClick={() => navigate(`/product/${productId}`)}
+              >
+                <img
+                  src={s.imageUrl ?? ''}
+                  alt={s.name ?? ''}
+                  className="h-10 w-10 shrink-0 rounded-lg object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{s.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {s.brand} · {s.category}
+                  </p>
+                </div>
+                <span
+                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold text-white ${nutriColors[s.nutriScore ?? 'C']}`}
+                >
+                  {s.nutriScore}
+                </span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              </button>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }
