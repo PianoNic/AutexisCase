@@ -11,5 +11,11 @@ public interface IAppDbContext
 
     DbSet<UserRoleAssignment> UserRoleAssignments { get; }
 
+    DbSet<Product> Products { get; }
+    DbSet<JourneyEvent> JourneyEvents { get; }
+    DbSet<PriceStep> PriceSteps { get; }
+    DbSet<TemperatureLog> TemperatureLogs { get; }
+    DbSet<Alert> Alerts { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
