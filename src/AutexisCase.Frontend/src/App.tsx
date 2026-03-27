@@ -1,11 +1,30 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from '@/auth/auth-provider'
+import { ProtectedRoute } from '@/auth/protected-route'
+import { LoginPage } from '@/pages/login'
+import { CallbackPage } from '@/pages/callback'
+import { HomePage } from '@/pages/home'
+
 function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">AutexisCase</h1>
-        <p className="mt-2 text-gray-600">Frontend is running.</p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/callback" element={<CallbackPage />} />
+          <Route
+            path="/*"
+            element={
+              <ProtectedRoute>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                </Routes>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 
