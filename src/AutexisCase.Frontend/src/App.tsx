@@ -1,12 +1,19 @@
-function App() {
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import HomeScreen from './screens/HomeScreen'
+import ScanScreen from './screens/ScanScreen'
+import ProductScreen from './screens/ProductScreen'
+
+export default function App() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-900">AutexisCase</h1>
-        <p className="mt-2 text-gray-600">Frontend is running.</p>
+    <BrowserRouter>
+      <div className="h-screen w-screen overflow-hidden bg-background text-foreground">
+        <Routes>
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/scan" element={<ScanScreen />} />
+          <Route path="/product" element={<ProductScreen />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
-    </div>
+    </BrowserRouter>
   )
 }
-
-export default App
