@@ -14,7 +14,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <div className="mx-auto h-screen w-screen max-w-md overflow-hidden bg-background text-foreground">
+        <div className="mx-auto h-dvh w-screen max-w-md overflow-hidden bg-background text-foreground">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/callback" element={<CallbackPage />} />

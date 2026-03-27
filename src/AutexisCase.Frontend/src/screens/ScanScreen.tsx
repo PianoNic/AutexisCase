@@ -170,7 +170,7 @@ export default function ScanScreen() {
       {!error && <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,rgba(0,0,0,0.5)_100%)]" />}
 
       {/* Top bar */}
-      <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pt-12">
+      <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between px-4 pt-12">
         <button onClick={() => navigate('/')} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
           <ArrowLeft className="h-4 w-4 text-white" />
         </button>
@@ -181,7 +181,10 @@ export default function ScanScreen() {
               <SwitchCamera className="h-4 w-4 text-white" />
             </button>
           )}
-          <button onClick={() => setShowManual(!showManual)} className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm">
+          <button
+            onClick={() => { setShowManual(!showManual); if (showManual) setBarcode('') }}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm"
+          >
             {showManual ? <X className="h-4 w-4 text-white" /> : <Keyboard className="h-4 w-4 text-white" />}
           </button>
         </div>
@@ -203,27 +206,8 @@ export default function ScanScreen() {
             </div>
             <p className="text-xs text-white/50">Weiter zur Chargennummer...</p>
           </div>
-        ) : showManual ? (
-          <div className="w-64 space-y-3">
-            <input
-              placeholder="EAN eingeben..."
-              value={barcode}
-              onChange={(e) => setBarcode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
-              type="number"
-              inputMode="numeric"
-              autoFocus
-              className="w-full rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 px-4 py-3 text-center text-lg text-white placeholder:text-white/40 outline-none focus:ring-2 focus:ring-primary"
-            />
-            <button
-              onClick={handleManualSubmit}
-              disabled={barcode.length < 8}
-              className="w-full rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
-            >
-              Suchen
-            </button>
-          </div>
-        ) : error ? (
+        ) : showManual ? null
+        : error ? (
           <div className="text-center space-y-2 px-8">
             <p className="text-sm font-medium text-white">{error}</p>
             <p className="text-xs text-white/60">Aktiviere die Kamera in den Browsereinstellungen.</p>
@@ -243,6 +227,32 @@ export default function ScanScreen() {
           </div>
         )}
       </div>
+
+      {/* Bottom-pinned manual entry */}
+      {showManual && !foundCode && (
+        <>
+        <div className="absolute inset-0 z-20" onPointerDown={() => { setShowManual(false); setBarcode('') }} />
+        <div className="absolute bottom-0 left-0 right-0 z-25 bg-background border-t px-4 py-3 flex gap-2">
+          <input
+            placeholder="EAN eingeben..."
+            value={barcode}
+            onChange={(e) => setBarcode(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleManualSubmit()}
+            type="number"
+            inputMode="numeric"
+            autoFocus
+            className="flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
+          />
+          <button
+            onClick={handleManualSubmit}
+            disabled={barcode.length < 8}
+            className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+          >
+            Los
+          </button>
+        </div>
+        </>
+      )}
     </div>
   )
 }

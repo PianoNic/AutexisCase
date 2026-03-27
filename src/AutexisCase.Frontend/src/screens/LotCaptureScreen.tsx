@@ -199,29 +199,31 @@ export default function LotCaptureScreen() {
           </div>
         </>
       ) : (
-        <div className="absolute inset-0 flex items-center justify-center px-8">
-          <div className="w-full max-w-xs space-y-4">
+        <div className="absolute inset-0 bg-background flex flex-col">
+          <div className="flex-1 flex items-center justify-center px-8">
             <div className="text-center">
               <p className="text-sm font-semibold">Chargennummer eingeben</p>
               <p className="text-xs text-muted-foreground mt-1">Steht auf der Verpackung als LOT, L, Charge oder Batch</p>
+              <button onClick={skip} className="mt-4 text-xs text-muted-foreground underline">
+                Überspringen
+              </button>
             </div>
+          </div>
+          <div className="border-t px-4 py-3 flex gap-2">
             <input
               value={manualLot}
               onChange={(e) => setManualLot(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submitManualLot()}
               placeholder="z.B. M5500, LX-2026-0142"
               autoFocus
-              className="w-full rounded-xl border px-4 py-3 text-sm text-center outline-none focus:ring-1 focus:ring-primary"
+              className="flex-1 rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               onClick={submitManualLot}
               disabled={!manualLot.trim()}
-              className="w-full rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+              className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
             >
-              Suchen
-            </button>
-            <button onClick={skip} className="w-full py-2 text-sm text-muted-foreground">
-              Überspringen
+              Los
             </button>
           </div>
         </div>
