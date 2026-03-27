@@ -1,23 +1,25 @@
+using AutexisCase.Application.Commands;
 using AutexisCase.Application.Dtos;
-using AutexisCase.Infrastructure.Services;
+using Mediator;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OcrController(OcrService ocrService) : ControllerBase
+public class OcrController(ISender sender) : ControllerBase
 {
     [HttpPost("lot", Name = "ExtractLotNumber")]
     [ProducesResponseType(typeof(OcrResultDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ExtractLot(IFormFile image)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ExtractLot(IFormFile image, CancellationToken cancellationToken)
     {
         if (image.Length == 0) return BadRequest("No image provided");
 
         using var ms = new MemoryStream();
-        await image.CopyToAsync(ms);
+        await image.CopyToAsync(ms, cancellationToken);
 
-        var (lotNumber, _) = await ocrService.ExtractLotNumberAsync(ms.ToArray());
-        return Ok(new OcrResultDto(lotNumber, lotNumber is not null));
+        var result = await sender.Send(new ExtractLotCommand(ms.ToArray()), cancellationToken);
+        return Ok(result);
     }
 }

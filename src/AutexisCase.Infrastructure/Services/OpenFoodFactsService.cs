@@ -1,9 +1,10 @@
 using System.Text.Json;
+using AutexisCase.Application.Interfaces;
 using AutexisCase.Domain;
 
 namespace AutexisCase.Infrastructure.Services;
 
-public class OpenFoodFactsService(HttpClient httpClient)
+public class OpenFoodFactsService(HttpClient httpClient) : IOpenFoodFactsService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
