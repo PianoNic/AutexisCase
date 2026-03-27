@@ -4,8 +4,8 @@ namespace AutexisCase.Domain;
 
 public class JourneyEvent : BaseEntity
 {
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; } = null!;
+    public Guid BatchId { get; set; }
+    public Batch Batch { get; set; } = null!;
 
     public required string Step { get; set; }
     public required string Location { get; set; }
