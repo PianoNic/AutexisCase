@@ -218,9 +218,6 @@ export default function ScanScreen() {
             <div className="absolute right-0 top-0 h-8 w-8 border-r-[3px] border-t-[3px] border-white/90 rounded-tr-2xl" />
             <div className="absolute bottom-0 left-0 h-8 w-8 border-b-[3px] border-l-[3px] border-white/90 rounded-bl-2xl" />
             <div className="absolute bottom-0 right-0 h-8 w-8 border-b-[3px] border-r-[3px] border-white/90 rounded-br-2xl" />
-            <div className="absolute inset-x-3 animate-scan">
-              <div className="h-0.5 bg-gradient-to-r from-transparent via-primary/80 to-transparent shadow-[0_0_12px_rgba(5,150,105,0.6)]" />
-            </div>
             <p className="absolute -bottom-8 left-0 right-0 text-center text-xs text-white/60">
               Richte die Kamera auf den Barcode
             </p>
