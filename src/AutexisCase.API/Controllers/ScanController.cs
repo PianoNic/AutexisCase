@@ -56,4 +56,28 @@ public class ScanController(IAppDbContext dbContext, ICurrentUserService current
             return new ScanRecordDto(s.Id, s.ProductId, s.Product.Name, s.Product.Brand, s.Product.ImageUrl, worstStatus, s.ScannedAt);
         }).ToList());
     }
+
+    [HttpGet("alerts", Name = "GetMyAlerts")]
+    [ProducesResponseType(typeof(List<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyAlerts(CancellationToken cancellationToken)
+    {
+        var user = await dbContext.Users.FirstOrDefaultAsync(u => u.ExternalId == currentUserService.ExternalId, cancellationToken);
+        if (user is null) return Ok(new List<object>());
+
+        var scannedProductIds = await dbContext.ScanRecords
+            .AsNoTracking()
+            .Where(s => s.UserId == user.Id)
+            .Select(s => s.ProductId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var alerts = await dbContext.Alerts
+            .AsNoTracking()
+            .Where(a => scannedProductIds.Contains(a.Batch.ProductId))
+            .OrderByDescending(a => a.Timestamp)
+            .Select(a => new { a.Id, a.Type, a.Severity, a.Title, a.Description, a.Timestamp, a.Read, ProductId = a.Batch.ProductId })
+            .ToListAsync(cancellationToken);
+
+        return Ok(alerts);
+    }
 }
