@@ -14,6 +14,7 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
     public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
 
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<JourneyEvent> JourneyEvents => Set<JourneyEvent>();
     public DbSet<PriceStep> PriceSteps => Set<PriceStep>();
     public DbSet<TemperatureLog> TemperatureLogs => Set<TemperatureLog>();
@@ -36,6 +37,10 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
             e.Property(p => p.Certifications).HasColumnType("jsonb");
         });
 
+        modelBuilder.Entity<Batch>(e =>
+        {
+            e.HasIndex(b => new { b.ProductId, b.LotNumber }).IsUnique();
+        });
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

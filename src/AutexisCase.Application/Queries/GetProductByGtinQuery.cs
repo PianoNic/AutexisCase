@@ -16,10 +16,7 @@ public class GetProductByGtinHandler(IAppDbContext dbContext) : IQueryHandler<Ge
     {
         var product = await dbContext.Products
             .AsNoTracking()
-            .Include(p => p.JourneyEvents.OrderBy(j => j.Timestamp))
-            .Include(p => p.PriceBreakdown)
-            .Include(p => p.TemperatureLogs.OrderBy(t => t.Time))
-            .Include(p => p.Alerts)
+            .Include(p => p.Batches)
             .SingleOrDefaultAsync(p => p.Gtin == request.Gtin, cancellationToken);
 
         return product?.ToDto();

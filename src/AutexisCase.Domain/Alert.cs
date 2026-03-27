@@ -4,8 +4,8 @@ namespace AutexisCase.Domain;
 
 public class Alert : BaseEntity
 {
-    public Guid ProductId { get; set; }
-    public Product Product { get; set; } = null!;
+    public Guid BatchId { get; set; }
+    public Batch Batch { get; set; } = null!;
 
     public AlertType Type { get; set; }
     public AlertSeverity Severity { get; set; }

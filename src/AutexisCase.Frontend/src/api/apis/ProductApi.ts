@@ -15,11 +15,20 @@
 
 import * as runtime from '../runtime';
 import type {
+  BatchDto,
+  JourneyCoordinatesDto,
+  JourneyEventDto,
   ProblemDetails,
   ProductDto,
   ProductSummaryDto,
 } from '../models/index';
 import {
+    BatchDtoFromJSON,
+    BatchDtoToJSON,
+    JourneyCoordinatesDtoFromJSON,
+    JourneyCoordinatesDtoToJSON,
+    JourneyEventDtoFromJSON,
+    JourneyEventDtoToJSON,
     ProblemDetailsFromJSON,
     ProblemDetailsToJSON,
     ProductDtoFromJSON,
@@ -27,6 +36,10 @@ import {
     ProductSummaryDtoFromJSON,
     ProductSummaryDtoToJSON,
 } from '../models/index';
+
+export interface GetBatchByIdRequest {
+    batchId: string;
+}
 
 export interface GetProductByGtinRequest {
     gtin: string;
@@ -36,10 +49,62 @@ export interface GetProductByIdRequest {
     id: string;
 }
 
+export interface GetProductCoordinatesRequest {
+    id: string;
+}
+
+export interface GetProductJourneyRequest {
+    id: string;
+}
+
+export interface LookupBatchRequest {
+    gtin?: string;
+    lot?: string;
+}
+
 /**
  * 
  */
 export class ProductApi extends runtime.BaseAPI {
+
+    /**
+     */
+    async getBatchByIdRaw(requestParameters: GetBatchByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling getBatchById().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BatchDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getBatchById(requestParameters: GetBatchByIdRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BatchDto> {
+        const response = await this.getBatchByIdRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      */
@@ -121,6 +186,84 @@ export class ProductApi extends runtime.BaseAPI {
 
     /**
      */
+    async getProductCoordinatesRaw(requestParameters: GetProductCoordinatesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<JourneyCoordinatesDto>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getProductCoordinates().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{id}/coordinates`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => JourneyCoordinatesDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getProductCoordinates(requestParameters: GetProductCoordinatesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<JourneyCoordinatesDto> {
+        const response = await this.getProductCoordinatesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getProductJourneyRaw(requestParameters: GetProductJourneyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<JourneyEventDto>>> {
+        if (requestParameters['id'] == null) {
+            throw new runtime.RequiredError(
+                'id',
+                'Required parameter "id" was null or undefined when calling getProductJourney().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{id}/journey`.replace(`{${"id"}}`, encodeURIComponent(String(requestParameters['id']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(JourneyEventDtoFromJSON));
+    }
+
+    /**
+     */
+    async getProductJourney(requestParameters: GetProductJourneyRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<JourneyEventDto>> {
+        const response = await this.getProductJourneyRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
     async getProductsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<ProductSummaryDto>>> {
         const queryParameters: any = {};
 
@@ -148,6 +291,46 @@ export class ProductApi extends runtime.BaseAPI {
      */
     async getProducts(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProductSummaryDto>> {
         const response = await this.getProductsRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async lookupBatchRaw(requestParameters: LookupBatchRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<BatchDto>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['gtin'] != null) {
+            queryParameters['gtin'] = requestParameters['gtin'];
+        }
+
+        if (requestParameters['lot'] != null) {
+            queryParameters['lot'] = requestParameters['lot'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/lookup`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => BatchDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async lookupBatch(requestParameters: LookupBatchRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<BatchDto> {
+        const response = await this.lookupBatchRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
