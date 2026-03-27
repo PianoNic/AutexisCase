@@ -8,14 +8,14 @@ namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ScanController(ISender sender) : ControllerBase
+public class ScanController(IMediator mediator) : ControllerBase
 {
     [HttpPost("{gtin}", Name = "RecordScan")]
     [ProducesResponseType(typeof(ScanRecordDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordScan(string gtin, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new RecordScanCommand(gtin), cancellationToken);
+        var result = await mediator.Send(new RecordScanCommand(gtin), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -23,7 +23,7 @@ public class ScanController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(List<ScanRecordDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRecentScans(CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetRecentScansQuery(), cancellationToken);
+        var result = await mediator.Send(new GetRecentScansQuery(), cancellationToken);
         return Ok(result);
     }
 
@@ -31,7 +31,7 @@ public class ScanController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(List<AlertDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyAlerts(CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetMyAlertsQuery(), cancellationToken);
+        var result = await mediator.Send(new GetMyAlertsQuery(), cancellationToken);
         return Ok(result);
     }
 }
