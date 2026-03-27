@@ -79,12 +79,8 @@ const badgeVariant: Record<number, 'default' | 'secondary' | 'destructive'> = {
   2: 'destructive',
 }
 
-function coordToRotation(lon: number, lat: number): [number, number, number] {
-  return [-lon, -lat, 0]
-}
-
-function easeInOutCubic(value: number) {
-  return value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2
+function coordToRotation(lon: number, lat: number, latOffset = 10): [number, number, number] {
+  return [-lon, -(lat - latOffset), 0]
 }
 
 function interpolate(start: number, end: number, progress: number) {
@@ -113,9 +109,12 @@ export default function ProductScreen() {
   const [scale, setScale] = useState(680)
   const rotationRef = useRef(rotation)
   const scaleRef = useRef(scale)
-  const cardsRef = useRef<Array<HTMLButtonElement | null>>([])
+  const animFrameRef = useRef(0)
+  const cardsRef = useRef<Array<HTMLDivElement | null>>([])
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const isScrollSnapping = useRef(false)
+  const clickedRef = useRef(false)
+  const initializedRef = useRef(false)
   const currentSnap = typeof snap === 'number' ? snap : SNAP_POINTS[1]
   const drawerProgress =
     (currentSnap - SNAP_POINTS[0]) / (SNAP_POINTS[SNAP_POINTS.length - 1] - SNAP_POINTS[0])
@@ -153,31 +152,38 @@ export default function ProductScreen() {
     const activeEvent = events[activeIndex]
     if (!activeEvent) return
 
+    cancelAnimationFrame(animFrameRef.current)
+
     const targetRotation = coordToRotation(activeEvent.longitude, activeEvent.latitude)
-    const startRotation = rotationRef.current
+    const startRotation = [...rotationRef.current] as [number, number, number]
     const startScale = scaleRef.current
-    const duration = 550
+    const targetScale = 680
+    const duration = 500
     const startedAt = performance.now()
-    let frameId = 0
 
     const animate = (time: number) => {
       const elapsed = Math.min(1, (time - startedAt) / duration)
-      const progress = easeInOutCubic(elapsed)
+      const t = elapsed < 0.5 ? 2 * elapsed * elapsed : 1 - Math.pow(-2 * elapsed + 2, 2) / 2
 
-      setRotation([
-        interpolate(startRotation[0], targetRotation[0], progress),
-        interpolate(startRotation[1], targetRotation[1], progress),
+      const newRotation: [number, number, number] = [
+        interpolate(startRotation[0], targetRotation[0], t),
+        interpolate(startRotation[1], targetRotation[1], t),
         0,
-      ])
-      setScale(interpolate(startScale, 680, progress))
+      ]
+      const newScale = interpolate(startScale, targetScale, t)
+
+      rotationRef.current = newRotation
+      scaleRef.current = newScale
+      setRotation(newRotation)
+      setScale(newScale)
 
       if (elapsed < 1) {
-        frameId = requestAnimationFrame(animate)
+        animFrameRef.current = requestAnimationFrame(animate)
       }
     }
 
-    frameId = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(frameId)
+    animFrameRef.current = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(animFrameRef.current)
   }, [activeIndex, events])
 
   const scrollToCard = useCallback((index: number, behavior: ScrollBehavior = 'smooth') => {
@@ -196,7 +202,7 @@ export default function ProductScreen() {
     container.scrollTo({ left: scrollLeft, behavior })
     setTimeout(() => {
       isScrollSnapping.current = false
-    }, behavior === 'smooth' ? 400 : 50)
+    }, behavior === 'smooth' ? 200 : 30)
   }, [])
 
   const handleScrollEnd = useCallback(() => {
@@ -226,12 +232,21 @@ export default function ProductScreen() {
     if (closestIndex !== activeIndex) {
       setActiveIndex(closestIndex)
     }
-    scrollToCard(closestIndex)
-  }, [activeIndex, scrollToCard])
+  }, [activeIndex])
+
+
 
   useEffect(() => {
     if (events.length === 0) return
-    scrollToCard(activeIndex, 'auto')
+    if (!initializedRef.current) {
+      initializedRef.current = true
+      scrollToCard(activeIndex, 'auto')
+      return
+    }
+    if (clickedRef.current) {
+      clickedRef.current = false
+      scrollToCard(activeIndex, 'smooth')
+    }
   }, [activeIndex, events.length, scrollToCard])
 
   if (loading) {
@@ -334,42 +349,58 @@ export default function ProductScreen() {
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
       >
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col">
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover before:hidden">
           {events.length > 0 && (
             <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
               <div
                 ref={scrollRef}
-                onScrollEnd={handleScrollEnd}
+                onScrollEnd={compactJourney ? undefined : handleScrollEnd}
                 onPointerDownCapture={(event) => event.stopPropagation()}
-                className="pointer-events-auto flex snap-x snap-mandatory items-center gap-0 overflow-x-auto overscroll-x-contain px-4 py-1 touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className={`pointer-events-auto flex items-center gap-0 overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+                  compactJourney
+                    ? 'overflow-x-hidden'
+                    : 'snap-x snap-mandatory overflow-x-auto touch-pan-x'
+                }`}
               >
+                <div className="w-[40%] shrink-0" />
                 {events.map((event, index) => (
-                  <div key={event.id} className="flex shrink-0 snap-center items-center">
+                  <div key={event.id} className="flex shrink-0 items-center">
                     {index > 0 && (
-                      <div className="flex items-center px-1.5">
-                        <div
-                          className="h-0.5 w-6 rounded-full transition-colors duration-300"
-                          style={{
-                            backgroundColor:
-                              index <= activeIndex ? statusColor[events[index - 1].status] : '#d1d5db',
-                          }}
-                        />
+                      <div className="flex items-center px-1">
                         <svg
-                          className="-ml-0.5 h-2 w-1.5 transition-colors duration-300"
-                          viewBox="0 0 6 8"
-                          fill={index <= activeIndex ? statusColor[events[index - 1].status] : '#d1d5db'}
+                          className="h-3 w-8 transition-colors duration-300"
+                          viewBox="0 0 32 12"
+                          fill="none"
                         >
-                          <path d="M0 0L6 4L0 8Z" />
+                          <line
+                            x1="0" y1="6" x2="24" y2="6"
+                            stroke={statusColor[events[index - 1].status]}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
+                          <polyline
+                            points="22,2 28,6 22,10"
+                            stroke={statusColor[events[index - 1].status]}
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill="none"
+                          />
                         </svg>
                       </div>
                     )}
 
-                    <button
+                    <div
                       ref={(element) => {
                         cardsRef.current[index] = element
                       }}
-                      onClick={() => setActiveIndex(index)}
-                      className="shrink-0"
+                      onClick={() => {
+                        if (compactJourney) {
+                          clickedRef.current = true
+                          setActiveIndex(index)
+                        }
+                      }}
+                      className={`shrink-0 ${compactJourney ? 'cursor-pointer' : 'snap-center'}`}
                     >
                       <Card
                         size="sm"
@@ -380,13 +411,13 @@ export default function ProductScreen() {
                         }`}
                         style={{ width: compactJourney ? undefined : '280px' }}
                       >
-                        <CardContent className={compactJourney ? 'px-3 py-2' : 'space-y-3 px-4 py-4'}>
+                        <CardContent className={compactJourney ? 'px-2.5 py-1' : 'space-y-3 px-4 py-4'}>
                           {compactJourney ? (
-                            <div className="flex items-center gap-2.5">
+                            <div className="flex items-center gap-2">
                               <div
-                                className={`h-2 w-2 shrink-0 rounded-full ${statusDot[event.status] ?? 'bg-primary'}`}
+                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${statusDot[event.status] ?? 'bg-primary'}`}
                               />
-                              <span className="text-sm font-medium">{event.step}</span>
+                              <span className="text-xs font-medium">{event.step}</span>
                             </div>
                           ) : (
                             <>
@@ -413,7 +444,7 @@ export default function ProductScreen() {
                           )}
                         </CardContent>
                       </Card>
-                    </button>
+                    </div>
                   </div>
                 ))}
 
@@ -455,17 +486,20 @@ export default function ProductScreen() {
               ))}
             </div>
 
-            {product.certifications.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 px-4">
-                {product.certifications.map((certification) => (
-                  <Badge key={certification} variant="secondary">
-                    {certification}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
             <Separator />
+
+            {product.certifications.length > 0 && (
+              <>
+                <div className="flex flex-wrap gap-1.5 px-4">
+                  {product.certifications.map((certification) => (
+                    <Badge key={certification} variant="secondary">
+                      {certification}
+                    </Badge>
+                  ))}
+                </div>
+                <Separator />
+              </>
+            )}
 
             <div className="space-y-1 px-4">
               <h3 className="text-sm font-semibold">Ingredients</h3>
