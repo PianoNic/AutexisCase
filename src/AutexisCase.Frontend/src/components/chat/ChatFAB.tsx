@@ -6,10 +6,10 @@ export function ChatFAB() {
   const { toggleChat, isOpen } = useChat()
   const location = useLocation()
 
-  if (location.pathname === '/login' || location.pathname === '/callback' || location.pathname === '/scan') return null
+  if (location.pathname === '/login' || location.pathname === '/callback' || location.pathname.startsWith('/scan')) return null
   if (isOpen) return null
 
-  const isProductPage = location.pathname.startsWith('/product/')
+  const isProductPage = location.pathname.startsWith('/product')
 
   return (
     <button

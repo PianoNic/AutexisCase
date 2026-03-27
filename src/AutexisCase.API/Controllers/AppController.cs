@@ -16,8 +16,8 @@ public class AppController(IConfiguration configuration) : ControllerBase
         var config = new AppConfigDto(
             configuration["Oidc:Authority"] ?? string.Empty,
             configuration["Oidc:ClientId"] ?? string.Empty,
-            configuration["Oidc:RedirectUri"] ?? "http://localhost:4200/callback",
-            configuration["Oidc:PostLogoutRedirectUri"] ?? "http://localhost:4200/",
+            configuration["Oidc:RedirectUri"] ?? "http://localhost:5173/callback",
+            configuration["Oidc:PostLogoutRedirectUri"] ?? "http://localhost:5173/",
             configuration["Oidc:Scope"] ?? "openid profile email");
 
         return Ok(config);

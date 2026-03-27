@@ -41,8 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <OidcAuthProvider
       authority={config.authority}
       client_id={config.clientId}
-      redirect_uri={config.redirectUri}
-      post_logout_redirect_uri={config.postLogoutRedirectUri}
+      redirect_uri={`${window.location.origin}/callback`}
+      post_logout_redirect_uri={`${window.location.origin}/`}
       scope={config.scope}
       response_type="code"
       userStore={new WebStorageStateStore({ store: window.localStorage })}

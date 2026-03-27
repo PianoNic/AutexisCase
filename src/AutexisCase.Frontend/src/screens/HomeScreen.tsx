@@ -87,7 +87,7 @@ export default function HomeScreen() {
               <button
                 key={s.id}
                 className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
-                onClick={() => navigate(`/product/${s.productId}`)}
+                onClick={() => navigate(`/product?id=${s.productId}`)}
               >
                 {s.productImageUrl && (
                   <img src={s.productImageUrl} alt={s.productName ?? ''} className="h-10 w-10 shrink-0 rounded-lg object-cover" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ComposableMap,
   Geographies,
@@ -44,37 +44,75 @@ function lerp(start: number, end: number, t: number) {
 }
 
 export default function ProductScreen() {
-  const { id } = useParams<{ id: string }>()
+  const { id: routeId } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { setProductContext } = useChat()
+
+  const qId = searchParams.get('id')
+  const qGtin = searchParams.get('gtin')
+  const qLot = searchParams.get('lot')
 
   const [product, setProduct] = useState<ProductDto | null>(null)
   const [batch, setBatch] = useState<BatchDto | null>(null)
   const [loading, setLoading] = useState(true)
 
   // AI features still use mock data (no backend endpoints yet)
-  const shelfLife = getShelfLifePrediction(id ?? '')
-  const anomalyResult = getAnomalyDetection(id ?? '')
-  const sustainability = getSustainabilityAnalysis(id ?? '')
-  const alternatives = getProductAlternatives(id ?? '')
+  const productId = product?.id ?? routeId ?? qId ?? ''
+  const shelfLife = getShelfLifePrediction(productId)
+  const anomalyResult = getAnomalyDetection(productId)
+  const sustainability = getSustainabilityAnalysis(productId)
+  const alternatives = getProductAlternatives(productId)
 
   useEffect(() => {
-    setProductContext(id ?? null)
+    setProductContext(productId || null)
     return () => setProductContext(null)
-  }, [id, setProductContext])
+  }, [productId, setProductContext])
 
   useEffect(() => {
-    if (!id) return
     setLoading(true)
-    productApi.getProductById({ id }).then((p) => {
-      setProduct(p)
-      // Load the first batch if available
-      const firstBatch = p.batches?.[0]
-      if (firstBatch?.id) {
-        productApi.getBatchById({ batchId: firstBatch.id }).then(setBatch).catch(() => {})
-      }
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [id])
+    setBatch(null)
+    setProduct(null)
+
+    const loadProduct = async () => {
+      try {
+        let p: ProductDto | null = null
+
+        if (routeId) {
+          p = await productApi.getProductById({ id: routeId })
+        } else if (qId) {
+          p = await productApi.getProductById({ id: qId })
+        } else if (qGtin) {
+          p = await productApi.getProductByGtin({ gtin: qGtin })
+        }
+
+        if (!p) { setLoading(false); return }
+        setProduct(p)
+
+        // If lot number provided, look up specific batch
+        if (qLot && qGtin) {
+          try {
+            const b = await productApi.lookupBatch({ gtin: qGtin, lot: qLot })
+            setBatch(b)
+          } catch {
+            // Fall back to first batch
+            const firstBatch = p.batches?.[0]
+            if (firstBatch?.id) {
+              try { setBatch(await productApi.getBatchById({ batchId: firstBatch.id })) } catch {}
+            }
+          }
+        } else {
+          const firstBatch = p.batches?.[0]
+          if (firstBatch?.id) {
+            try { setBatch(await productApi.getBatchById({ batchId: firstBatch.id })) } catch {}
+          }
+        }
+      } catch {}
+      setLoading(false)
+    }
+
+    loadProduct()
+  }, [routeId, qId, qGtin, qLot])
 
   const [activeIndex, setActiveIndex] = useState(0)
   const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0])

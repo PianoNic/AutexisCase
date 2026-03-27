@@ -12,7 +12,8 @@ export function BottomNav() {
   if (
     location.pathname === '/login' ||
     location.pathname === '/callback' ||
-    location.pathname.startsWith('/product/')
+    location.pathname.startsWith('/product') ||
+    location.pathname.startsWith('/scan')
   ) return null
 
   return (
