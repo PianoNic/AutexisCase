@@ -6,7 +6,7 @@
     "generators": {
       "typescript-client": {
         "generatorName": "typescript-fetch",
-        "output": "#{cwd}/src/api/generated",
+        "output": "#{cwd}/src/api",
         "inputSpec": "http://localhost:5067/swagger/v1/swagger.json",
         "additionalProperties": {
           "supportsES6": "true",
