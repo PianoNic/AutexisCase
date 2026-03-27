@@ -72,26 +72,24 @@ export default function HomeScreen() {
     if (!accessToken) return
     const headers = { Authorization: `Bearer ${accessToken}` }
 
-    fetch('/api/Product', { headers })
+    fetch('/api/Scan/recent', { headers })
       .then(r => r.ok ? r.json() : [])
-      .then(setProducts)
+      .then((scans: any[]) => setProducts(scans.map(s => ({
+        id: s.productId,
+        gtin: '',
+        name: s.productName,
+        brand: s.productBrand,
+        imageUrl: s.productImageUrl,
+        category: null,
+        status: s.productStatus,
+        nutriScore: null,
+        riskScore: 0,
+      }))))
       .catch(console.error)
 
-    fetch('/api/Product', { headers })
+    fetch('/api/Scan/alerts', { headers })
       .then(r => r.ok ? r.json() : [])
-      .then(async (prods: ProductSummary[]) => {
-        const allAlerts: AlertItem[] = []
-        for (const p of prods) {
-          try {
-            const res = await fetch(`/api/Product/${p.id}`, { headers })
-            if (res.ok) {
-              const full = await res.json()
-              if (full.alerts) allAlerts.push(...full.alerts.map((a: any) => ({ ...a, productId: p.id })))
-            }
-          } catch { /* skip */ }
-        }
-        setAlerts(allAlerts)
-      })
+      .then(setAlerts)
       .catch(console.error)
   }, [accessToken])
 
