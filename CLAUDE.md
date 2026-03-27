@@ -55,24 +55,21 @@ Examples:
 - **Play a chime sound when a task is completed OR when user input is needed.**
 - This signals the user without requiring them to watch the terminal.
 
-### Setup (one-time)
+### Chime Commands
 
-**Windows (PowerShell):**
-```powershell
-# Uses the built-in system sound — no install needed
-[System.Media.SystemSounds]::Exclamation.Play()
-```
-Run via bash:
+The choo-choo train sound is located at `scripts/choo-choo.wav`.
+
+**Windows:**
 ```bash
-powershell -c "[System.Media.SystemSounds]::Exclamation.Play()"
+powershell -c "(New-Object Media.SoundPlayer 'scripts/choo-choo.wav').PlaySync()"
 ```
 
-**macOS (Terminal):**
+**macOS:**
 ```bash
-afplay /System/Library/Sounds/Glass.aiff
+afplay scripts/choo-choo.wav
 ```
 
-### Usage
+### When to play
 Claude will run the appropriate chime command automatically when:
 - A task or major step is completed
 - User input or a decision is required
