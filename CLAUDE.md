@@ -39,6 +39,15 @@ Examples:
 - Title: `Fixed Null Errors on Calendar Page` — Body: `resolve #200`
 - Title: `Restructured Project` — Body: `resolve #182`
 
+## Frontend
+
+- **Always use `bun` — never `npm` or `yarn`.**
+- Frontend lives in `src/AutexisCase.Frontend` (React + Vite + Tailwind CSS v4)
+- API client is generated via [OpenAPI Generator](https://openapi-generator.tech) — run `bun run api:generate`
+- Install deps: `cd src/AutexisCase.Frontend && bun install`
+- Dev server: `bun run dev`
+- Build: `bun run build`
+
 ## Branch Naming
 
 All branches must follow this convention:
