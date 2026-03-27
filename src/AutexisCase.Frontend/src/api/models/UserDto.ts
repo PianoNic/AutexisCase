@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { UserRole } from './UserRole';
+import {
+    UserRoleFromJSON,
+    UserRoleFromJSONTyped,
+    UserRoleToJSON,
+    UserRoleToJSONTyped,
+} from './UserRole';
+
 /**
  * 
  * @export
@@ -25,12 +33,6 @@ export interface UserDto {
      * @memberof UserDto
      */
     id?: string;
-    /**
-     * 
-     * @type {string}
-     * @memberof UserDto
-     */
-    externalId?: string | null;
     /**
      * 
      * @type {string}
@@ -49,6 +51,18 @@ export interface UserDto {
      * @memberof UserDto
      */
     avatarUrl?: string | null;
+    /**
+     * 
+     * @type {Array<UserRole>}
+     * @memberof UserDto
+     */
+    roles?: Array<UserRole> | null;
+    /**
+     * 
+     * @type {Date}
+     * @memberof UserDto
+     */
+    createdAt?: Date;
 }
 
 /**
@@ -69,10 +83,11 @@ export function UserDtoFromJSONTyped(json: any, ignoreDiscriminator: boolean): U
     return {
         
         'id': json['id'] == null ? undefined : json['id'],
-        'externalId': json['externalId'] == null ? undefined : json['externalId'],
         'email': json['email'] == null ? undefined : json['email'],
         'displayName': json['displayName'] == null ? undefined : json['displayName'],
         'avatarUrl': json['avatarUrl'] == null ? undefined : json['avatarUrl'],
+        'roles': json['roles'] == null ? undefined : ((json['roles'] as Array<any>).map(UserRoleFromJSON)),
+        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
 }
 
@@ -88,10 +103,11 @@ export function UserDtoToJSONTyped(value?: UserDto | null, ignoreDiscriminator: 
     return {
         
         'id': value['id'],
-        'externalId': value['externalId'],
         'email': value['email'],
         'displayName': value['displayName'],
         'avatarUrl': value['avatarUrl'],
+        'roles': value['roles'] == null ? undefined : ((value['roles'] as Array<any>).map(UserRoleToJSON)),
+        'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
     };
 }
 

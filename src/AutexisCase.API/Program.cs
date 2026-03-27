@@ -5,11 +5,12 @@ using System.Text.Json.Serialization;
 using AutexisCase.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 
-
 using AutexisCase.Infrastructure.Services;
 
+using FluentValidation;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.OpenApi;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,9 +29,11 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 
 
-// Mediator & Validation
+// Mediator, Validation & Authorization
 builder.Services.AddMediator(options => { options.ServiceLifetime = ServiceLifetime.Scoped; });
+builder.Services.AddValidatorsFromAssemblyContaining<IAppDbContext>();
 builder.Services.AddScoped(typeof(Mediator.IPipelineBehavior<,>), typeof(AutexisCase.Application.Behaviors.ValidationBehavior<,>));
+builder.Services.AddScoped(typeof(Mediator.IPipelineBehavior<,>), typeof(AutexisCase.Application.Behaviors.AuthorizationBehavior<,>));
 
 
 // Authentication (JWT/OIDC)
@@ -52,11 +55,15 @@ builder.Services.AddHttpClient();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme { Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT", In = ParameterLocation.Header, Description = "Enter your JWT token" });
+    options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement { [new OpenApiSecuritySchemeReference("Bearer", doc)] = new List<string>() });
+});
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.WithOrigins("http://localhost:4200").AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+    builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 }
 
 var app = builder.Build();
@@ -67,10 +74,12 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AutexisCaseDbContext>();
     dbContext.Database.Migrate();
+    await SeedData.SeedAsync(dbContext);
 }
 
 
 // Middleware pipeline
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
