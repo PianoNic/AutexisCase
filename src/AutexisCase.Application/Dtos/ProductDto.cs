@@ -53,7 +53,9 @@ public record BatchSummaryDto(
     string LotNumber,
     ProductStatus Status,
     int RiskScore,
-    DateTime? ExpiryDate
+    DateTime? ProductionDate,
+    DateTime? ExpiryDate,
+    int? DaysRemaining
 );
 
 public record NutritionDto(
