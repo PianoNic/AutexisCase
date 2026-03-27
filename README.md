@@ -8,6 +8,7 @@ AI-powered food supply chain tracker — from field to store shelf.
 - [Bun](https://bun.sh)
 - [Docker](https://www.docker.com/get-started)
 - Java 11+ (required by OpenAPI Generator)
+- [OpenRouter](https://openrouter.ai) API key (for AI-powered LOT/OCR)
 
 ## Getting Started
 
@@ -37,9 +38,11 @@ dotnet user-secrets set "Oidc:ClientId" "<your-client-id>"
 dotnet user-secrets set "Oidc:RequireHttpsMetadata" "true"
 dotnet user-secrets set "Oidc:RedirectUri" "http://localhost:5173/callback"
 dotnet user-secrets set "Oidc:PostLogoutRedirectUri" "http://localhost:5173/"
+dotnet user-secrets set "OpenRouter:ApiKey" "<your-openrouter-api-key>"
+dotnet user-secrets set "OpenRouter:Model" "google/gemini-2.0-flash-001"
 ```
 
-> Ask a team member for the OIDC Client ID.
+> Ask a team member for the OIDC Client ID and OpenRouter API key.
 
 ### 4. Run the backend
 
@@ -75,27 +78,56 @@ bun run dev
 
 The frontend will be available at `http://localhost:5173`.
 
+## Scan Flow
+
+1. **Barcode scan** — Camera detects EAN/GTIN barcode (native BarcodeDetector or zxing-wasm fallback)
+2. **LOT capture** — User photographs the LOT/batch number on the packaging
+3. **AI extraction** — Image sent to vision LLM (via Semantic Kernel + OpenRouter) which extracts the LOT number
+4. **Batch lookup** — Product + LOT matched to specific charge with full journey, alerts, temperatures
+5. **Product page** — Shows supply chain journey on interactive map, sustainability metrics, alerts
+
+Users can also enter the LOT number manually or skip the LOT step.
+
 ## Auth Flow
 
 1. User opens the app → redirected to `/login`
 2. Clicks "Anmelden" → redirected to OIDC provider (Pocket ID)
 3. After login → redirected to `/callback`
 4. Frontend syncs user with backend via `POST /api/Auth/sync`
-5. User lands on home page
+5. User lands on home page showing their scanned products
 
 ## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/Product` | List all products (summary) |
-| `GET` | `/api/Product/{id}` | Full product with journey, prices, temps, alerts |
-| `GET` | `/api/Product/gtin/{gtin}` | Lookup by barcode (for scanner) |
+| `GET` | `/api/Product/{id}` | Full product with batches |
+| `GET` | `/api/Product/gtin/{gtin}` | Lookup by barcode (auto-fetches from Open Food Facts) |
+| `GET` | `/api/Product/batch/{batchId}` | Full batch with journey, prices, temps, alerts |
+| `GET` | `/api/Product/batch/lookup?gtin=X&lot=Y` | Lookup batch by GTIN + LOT number |
+| `GET` | `/api/Product/{id}/journey` | Journey events for a product |
+| `GET` | `/api/Product/{id}/coordinates` | Map coordinates for journey |
+| `POST` | `/api/Scan/{gtin}` | Record a barcode scan |
+| `GET` | `/api/Scan/recent` | User's recent scans |
+| `GET` | `/api/Scan/alerts` | Alerts for user's scanned products |
+| `POST` | `/api/Ocr/lot` | Extract LOT number from image (AI vision) |
 | `GET` | `/api/App/config` | OIDC configuration (anonymous) |
 | `POST` | `/api/Auth/sync` | Sync authenticated user to database |
 
-## OIDC Configuration
+## Tech Stack
 
-The application uses OIDC for authentication via [auth.gaggao.com](https://auth.gaggao.com).
+| Layer | Technology |
+|---|---|
+| **Backend** | .NET 10, ASP.NET Core, Entity Framework Core |
+| **Frontend** | React 19, Vite, Tailwind CSS v4, shadcn/ui |
+| **Database** | PostgreSQL 18 |
+| **Auth** | OIDC/JWT via Pocket ID (PKCE) |
+| **AI/OCR** | Microsoft Semantic Kernel + OpenRouter (vision LLM) |
+| **Barcode** | Native BarcodeDetector API + zxing-wasm fallback |
+| **Product Data** | Open Food Facts (auto-fetch) |
+| **Architecture** | Clean Architecture, CQRS (Mediator), role-based authorization |
+
+## OIDC Configuration
 
 | Setting | Value |
 |---|---|
@@ -103,12 +135,9 @@ The application uses OIDC for authentication via [auth.gaggao.com](https://auth.
 | Authorization URL | `https://auth.gaggao.com/authorize` |
 | Token URL | `https://auth.gaggao.com/api/oidc/token` |
 | Userinfo URL | `https://auth.gaggao.com/api/oidc/userinfo` |
-| End Session URL | `https://auth.gaggao.com/api/oidc/end-session` |
 | PKCE | Enabled |
 
 ### Callback URLs
-
-Register these redirect URIs in your OIDC provider:
 
 - **Development**: `http://localhost:5173/callback`
 - **Production**: `https://<your-domain>/callback`
@@ -125,9 +154,9 @@ docker compose up --build
 
 ```
 src/
-  AutexisCase.Domain/          # Entities (Product, JourneyEvent, Alert, User, etc.)
-  AutexisCase.Application/     # Commands, Queries, DTOs, Mappers, Behaviors
-  AutexisCase.Infrastructure/  # DbContext, Services, Migrations, Seed Data
+  AutexisCase.Domain/          # Entities (Product, Batch, JourneyEvent, Alert, User)
+  AutexisCase.Application/     # Commands, Queries, DTOs, Mappers, Behaviors, Interfaces
+  AutexisCase.Infrastructure/  # DbContext, Services (OCR, OpenFoodFacts), Migrations
   AutexisCase.API/             # Controllers, Middleware, Entry point
   AutexisCase.Frontend/        # React + Vite + Tailwind CSS + OIDC Auth
   AutexisCase.Tests/           # xUnit tests
