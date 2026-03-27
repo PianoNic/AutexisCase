@@ -7,13 +7,13 @@ namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductController(ISender sender) : ControllerBase
+public class ProductController(IMediator mediator) : ControllerBase
 {
     [HttpGet(Name = "GetProducts")]
     [ProducesResponseType(typeof(List<ProductSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductsQuery(), cancellationToken);
+        var result = await mediator.Send(new GetProductsQuery(), cancellationToken);
         return Ok(result);
     }
 
@@ -22,7 +22,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductByIdQuery(id), cancellationToken);
+        var result = await mediator.Send(new GetProductByIdQuery(id), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -31,7 +31,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetByGtin(string gtin, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductByGtinQuery(gtin), cancellationToken);
+        var result = await mediator.Send(new GetProductByGtinQuery(gtin), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -40,7 +40,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBatchById(Guid batchId, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetBatchByIdQuery(batchId), cancellationToken);
+        var result = await mediator.Send(new GetBatchByIdQuery(batchId), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -49,7 +49,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> LookupBatch([FromQuery] string gtin, [FromQuery] string lot, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new LookupBatchQuery(gtin, lot), cancellationToken);
+        var result = await mediator.Send(new LookupBatchQuery(gtin, lot), cancellationToken);
         return result is null ? NotFound() : Ok(result);
     }
 
@@ -57,7 +57,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(List<JourneyEventDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetJourney(Guid id, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductJourneyQuery(id), cancellationToken);
+        var result = await mediator.Send(new GetProductJourneyQuery(id), cancellationToken);
         return Ok(result);
     }
 
@@ -65,7 +65,7 @@ public class ProductController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(JourneyCoordinatesDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCoordinates(Guid id, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetProductCoordinatesQuery(id), cancellationToken);
+        var result = await mediator.Send(new GetProductCoordinatesQuery(id), cancellationToken);
         return Ok(result);
     }
 }

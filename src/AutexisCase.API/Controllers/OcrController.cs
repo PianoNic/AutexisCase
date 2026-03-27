@@ -7,7 +7,7 @@ namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class OcrController(ISender sender) : ControllerBase
+public class OcrController(IMediator mediator) : ControllerBase
 {
     [HttpPost("lot", Name = "ExtractLotNumber")]
     [ProducesResponseType(typeof(OcrResultDto), StatusCodes.Status200OK)]
@@ -19,7 +19,7 @@ public class OcrController(ISender sender) : ControllerBase
         using var ms = new MemoryStream();
         await image.CopyToAsync(ms, cancellationToken);
 
-        var result = await sender.Send(new ExtractLotCommand(ms.ToArray()), cancellationToken);
+        var result = await mediator.Send(new ExtractLotCommand(ms.ToArray()), cancellationToken);
         return Ok(result);
     }
 }

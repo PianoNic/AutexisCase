@@ -8,13 +8,13 @@ namespace AutexisCase.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ExampleController(ISender sender) : ControllerBase
+public class ExampleController(IMediator mediator) : ControllerBase
 {
     [HttpGet(Name = "GetExamples")]
     [ProducesResponseType(typeof(List<ExampleDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAsync(CancellationToken cancellationToken)
     {
-        var result = await sender.Send(new GetExamplesQuery(), cancellationToken);
+        var result = await mediator.Send(new GetExamplesQuery(), cancellationToken);
         return Ok(result);
     }
 
@@ -23,7 +23,7 @@ public class ExampleController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAsync(CreateExampleCommand command, CancellationToken cancellationToken)
     {
-        var result = await sender.Send(command, cancellationToken);
+        var result = await mediator.Send(command, cancellationToken);
         return CreatedAtRoute("GetExamples", result);
     }
 }
