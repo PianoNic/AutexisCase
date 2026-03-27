@@ -9,5 +9,7 @@ public interface IAppDbContext
 
     DbSet<User> Users { get; }
 
+    DbSet<UserRoleAssignment> UserRoleAssignments { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

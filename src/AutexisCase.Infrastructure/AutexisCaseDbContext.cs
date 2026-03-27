@@ -11,6 +11,8 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
 
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutexisCaseDbContext).Assembly);
 
@@ -34,5 +36,3 @@ public class AutexisCaseDbContextFactory : IDesignTimeDbContextFactory<AutexisCa
         return new AutexisCaseDbContext(optionsBuilder.Options);
     }
 }
-
-

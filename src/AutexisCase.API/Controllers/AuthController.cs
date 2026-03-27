@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Text.Json;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
+using AutexisCase.Application.Mappers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutexisCase.API.Controllers;
@@ -31,7 +32,7 @@ public class AuthController(ICurrentUserService currentUserService, IUserSyncSer
         }
 
         var user = await userSyncService.SyncUserAsync(currentUserService.ExternalId, email, displayName, avatarUrl, cancellationToken);
-        return Ok(new UserDto(user.Id, user.ExternalId, user.Email, user.DisplayName, user.AvatarUrl));
+        return Ok(user.ToDto());
     }
 
     private async Task<OidcUserInfo?> FetchUserInfoAsync(CancellationToken cancellationToken)
