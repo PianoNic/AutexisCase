@@ -72,7 +72,7 @@ export default function ScanScreen() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      <div id="scanner-region" className="absolute inset-0 h-full w-full" />
+      <div id="scanner-region" className="absolute inset-0 h-full w-full [&_video]:!object-cover [&_video]:!h-full [&_video]:!w-full [&>div]:!border-none [&_img]:hidden" />
 
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background">
