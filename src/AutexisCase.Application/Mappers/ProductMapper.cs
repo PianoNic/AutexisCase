@@ -28,7 +28,7 @@ public static class ProductMapper
     );
 
     public static BatchSummaryDto ToSummaryDto(this Batch b) => new(
-        b.Id, b.LotNumber, b.Status, b.RiskScore, b.ExpiryDate
+        b.Id, b.LotNumber, b.Status, b.RiskScore, b.ProductionDate, b.ExpiryDate, b.DaysRemaining
     );
 
     public static NutritionDto ToDto(this Nutrition n) => new(

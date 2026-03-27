@@ -33,6 +33,16 @@ interface JourneyEvent {
   cost: number | null
 }
 
+interface Batch {
+  id: string
+  lotNumber: string
+  status: number
+  riskScore: number
+  productionDate: string | null
+  expiryDate: string | null
+  daysRemaining: number | null
+}
+
 interface Product {
   id: string
   gtin: string
@@ -51,6 +61,7 @@ interface Product {
   waterLiters: number | null
   status: number
   journeyEvents: JourneyEvent[]
+  batches: Batch[]
   alerts: any[]
 }
 
@@ -387,6 +398,40 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div className="flex-1 space-y-4 overflow-y-auto pb-6">
+            {product.batches.length > 0 && (
+              <div className="space-y-2 px-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Batch Information</p>
+                <div className="rounded-xl bg-muted p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Lot Number</span>
+                    <span className="text-sm font-semibold font-mono">{product.batches[0].lotNumber}</span>
+                  </div>
+                  {product.batches[0].productionDate && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Production Date</span>
+                      <span>{new Date(product.batches[0].productionDate).toLocaleDateString('de-CH')}</span>
+                    </div>
+                  )}
+                  {product.batches[0].expiryDate && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Expiry Date</span>
+                      <span className={product.batches[0].daysRemaining != null && product.batches[0].daysRemaining < 30 ? 'text-amber-600 font-semibold' : ''}>
+                        {new Date(product.batches[0].expiryDate).toLocaleDateString('de-CH')}
+                      </span>
+                    </div>
+                  )}
+                  {product.batches[0].daysRemaining != null && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Shelf Life Remaining</span>
+                      <span className={product.batches[0].daysRemaining < 30 ? 'text-amber-600 font-semibold' : 'text-green-600'}>
+                        {product.batches[0].daysRemaining} days
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-3 gap-2 px-4">
               {[
                 { label: 'Origin', value: product.origin ?? '-' },
