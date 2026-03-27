@@ -1,20 +1,56 @@
 using System.Text.Json;
 using AutexisCase.Application.Interfaces;
+using AutexisCase.Domain;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace AutexisCase.Infrastructure.Services;
 
-public class RoutingService(HttpClient httpClient, IConfiguration configuration) : IRoutingService
+public class RoutingService(HttpClient httpClient, IConfiguration configuration, IAppDbContext dbContext) : IRoutingService
 {
     private readonly string _apiKey = configuration["OpenRouteService:ApiKey"] ?? throw new InvalidOperationException("OpenRouteService:ApiKey not configured");
 
-    // Profiles: driving-car, driving-hgv (truck), cycling-regular, foot-walking
     public async Task<List<double[]>> GetRouteAsync(double fromLat, double fromLon, double toLat, double toLon, string profile = "driving-hgv", CancellationToken cancellationToken = default)
     {
-        // Check if this is a sea route (points on different continents separated by ocean)
-        if (IsCrossOcean(fromLat, fromLon, toLat, toLon))
-            return GenerateGreatCircleArc(fromLat, fromLon, toLat, toLon);
+        // Generate cache key from rounded coordinates + profile
+        var cacheKey = $"{fromLat:F4}_{fromLon:F4}_{toLat:F4}_{toLon:F4}_{profile}";
 
+        // Check DB cache
+        var cached = await dbContext.RouteCaches.AsNoTracking().FirstOrDefaultAsync(r => r.CacheKey == cacheKey && r.ExpiresAt > DateTime.UtcNow, cancellationToken);
+        if (cached is not null)
+            return JsonSerializer.Deserialize<List<double[]>>(cached.PointsJson) ?? [];
+
+        // Compute route
+        List<double[]> points;
+        if (IsCrossOcean(fromLat, fromLon, toLat, toLon))
+            points = GenerateGreatCircleArc(fromLat, fromLon, toLat, toLon);
+        else
+            points = await FetchRouteFromOrs(fromLat, fromLon, toLat, toLon, profile, cancellationToken);
+
+        // Save to cache (30 days)
+        var entry = new RouteCache
+        {
+            CacheKey = cacheKey,
+            PointsJson = JsonSerializer.Serialize(points),
+            Profile = profile,
+            ExpiresAt = DateTime.UtcNow.AddDays(30),
+        };
+
+        try
+        {
+            dbContext.RouteCaches.Add(entry);
+            await dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Race condition: another request cached it first — ignore
+        }
+
+        return points;
+    }
+
+    private async Task<List<double[]>> FetchRouteFromOrs(double fromLat, double fromLon, double toLat, double toLon, string profile, CancellationToken cancellationToken)
+    {
         try
         {
             var url = $"https://api.openrouteservice.org/v2/directions/{profile}?api_key={_apiKey}&start={fromLon},{fromLat}&end={toLon},{toLat}";
@@ -34,7 +70,7 @@ public class RoutingService(HttpClient httpClient, IConfiguration configuration)
             var points = new List<double[]>();
             foreach (var coord in coordinates.EnumerateArray())
             {
-                points.Add([coord[1].GetDouble(), coord[0].GetDouble()]); // ORS returns [lon, lat], we want [lat, lon]
+                points.Add([coord[1].GetDouble(), coord[0].GetDouble()]);
             }
 
             return points;
@@ -47,19 +83,10 @@ public class RoutingService(HttpClient httpClient, IConfiguration configuration)
 
     private static bool IsCrossOcean(double lat1, double lon1, double lat2, double lon2)
     {
-        // Simple heuristic: if points are on different continents (large lon/lat difference crossing known ocean areas)
         var lonDiff = Math.Abs(lon1 - lon2);
-        var latDiff = Math.Abs(lat1 - lat2);
-
-        // Africa to Europe is not cross-ocean (connected by land via Middle East)
-        // But Ghana (-1.6 lon, 6.7 lat) to Belgium (4.4 lon, 50.8 lat) IS cross-ocean
-        // Heuristic: if latitude difference > 20 AND one point is in sub-Saharan Africa
         if (lat1 < 15 && lat2 > 35 && lonDiff < 30) return true;
         if (lat2 < 15 && lat1 > 35 && lonDiff < 30) return true;
-
-        // Large longitude difference (e.g. Americas to Europe/Asia)
         if (lonDiff > 40) return true;
-
         return false;
     }
 
@@ -76,30 +103,19 @@ public class RoutingService(HttpClient httpClient, IConfiguration configuration)
             var f = (double)i / segments;
             var d = Math.Acos(Math.Sin(lat1Rad) * Math.Sin(lat2Rad) + Math.Cos(lat1Rad) * Math.Cos(lat2Rad) * Math.Cos(lon2Rad - lon1Rad));
 
-            if (d < 0.0001)
-            {
-                points.Add([lat1, lon1]);
-                continue;
-            }
+            if (d < 0.0001) { points.Add([lat1, lon1]); continue; }
 
             var a = Math.Sin((1 - f) * d) / Math.Sin(d);
             var b = Math.Sin(f * d) / Math.Sin(d);
-
             var x = a * Math.Cos(lat1Rad) * Math.Cos(lon1Rad) + b * Math.Cos(lat2Rad) * Math.Cos(lon2Rad);
             var y = a * Math.Cos(lat1Rad) * Math.Sin(lon1Rad) + b * Math.Cos(lat2Rad) * Math.Sin(lon2Rad);
             var z = a * Math.Sin(lat1Rad) + b * Math.Sin(lat2Rad);
 
-            var lat = Math.Atan2(z, Math.Sqrt(x * x + y * y)) * 180 / Math.PI;
-            var lon = Math.Atan2(y, x) * 180 / Math.PI;
-
-            points.Add([lat, lon]);
+            points.Add([Math.Atan2(z, Math.Sqrt(x * x + y * y)) * 180 / Math.PI, Math.Atan2(y, x) * 180 / Math.PI]);
         }
 
         return points;
     }
 
-    private static List<double[]> GenerateStraightLine(double lat1, double lon1, double lat2, double lon2)
-    {
-        return [[lat1, lon1], [lat2, lon2]];
-    }
+    private static List<double[]> GenerateStraightLine(double lat1, double lon1, double lat2, double lon2) => [[lat1, lon1], [lat2, lon2]];
 }
