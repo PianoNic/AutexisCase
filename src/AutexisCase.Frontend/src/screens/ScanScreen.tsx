@@ -6,6 +6,25 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useAppAuth } from '@/auth/use-app-auth'
 
+// Prefer higher resolution on modern phones; browsers may clamp to device limits.
+type ExtendedMediaTrackConstraints = MediaTrackConstraints & {
+  // Non-standard / not yet in TS lib; ignored by browsers that don't support them.
+  focusMode?: ConstrainDOMString
+  exposureMode?: ConstrainDOMString
+  whiteBalanceMode?: ConstrainDOMString
+}
+
+// Note: html5-qrcode's start() expects MediaTrackConstraints (not full MediaStreamConstraints).
+const VIDEO_TRACK_CONSTRAINTS: ExtendedMediaTrackConstraints = {
+  facingMode: { ideal: 'environment' },
+  width: { ideal: 1920 },
+  height: { ideal: 1080 },
+  frameRate: { ideal: 30 },
+  focusMode: 'continuous',
+  exposureMode: 'continuous',
+  whiteBalanceMode: 'continuous',
+}
+
 interface ScanRecord {
   id: string
   productId: string
@@ -26,8 +45,13 @@ export default function ScanScreen() {
   const { accessToken } = useAppAuth()
   const scannerRef = useRef<Html5Qrcode | null>(null)
   const [scanning, setScanning] = useState(false)
+  const scanningRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
   const [recentScans, setRecentScans] = useState<ScanRecord[]>([])
+
+  useEffect(() => {
+    scanningRef.current = scanning
+  }, [scanning])
 
   useEffect(() => {
     if (!accessToken) return
@@ -38,15 +62,17 @@ export default function ScanScreen() {
   }, [accessToken])
 
   useEffect(() => {
-    let started = false
+    let didStart = false
     const scanner = new Html5Qrcode('scanner-region')
     scannerRef.current = scanner
 
     scanner.start(
-      { facingMode: 'environment' },
-      { fps: 10, qrbox: { width: 250, height: 150 }, aspectRatio: 1 },
+      // Use constraints so the browser can select a higher-quality stream.
+      VIDEO_TRACK_CONSTRAINTS,
+      { fps: 15, qrbox: { width: 280, height: 180 }, aspectRatio: 1 },
       async (decodedText) => {
-        if (scanning) return
+        if (scanningRef.current) return
+        scanningRef.current = true
         setScanning(true)
 
         scanner.pause()
@@ -57,22 +83,28 @@ export default function ScanScreen() {
               method: 'POST',
               headers: { Authorization: `Bearer ${accessToken}` },
             })
-          } catch { /* best effort */ }
+          } catch {
+            /* best effort */
+          }
         }
 
         navigate(`/product?gtin=${decodedText}`)
       },
       () => {}
-    ).then(() => { started = true }).catch(() => setError('Camera access denied'))
+    )
+      .then(() => {
+        didStart = true
+      })
+      .catch(() => setError('Camera access denied'))
 
     return () => {
-      if (started) scanner.stop().catch(() => {})
+      if (didStart) scanner.stop().catch(() => {})
     }
-  }, [])
+  }, [accessToken, navigate])
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      <div id="scanner-region" className="absolute inset-0 h-full w-full [&_video]:!object-cover [&_video]:!h-full [&_video]:!w-full [&>div]:!border-none [&_img]:hidden" />
+      <div id="scanner-region" className="absolute inset-0 h-full w-full [&_video]:object-cover! [&_video]:h-full! [&_video]:w-full! [&>div]:border-none! [&_img]:hidden" />
 
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background">
@@ -89,7 +121,7 @@ export default function ScanScreen() {
         </div>
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-linear-to-b from-black/60 to-transparent" />
 
       <div className="absolute left-0 right-0 top-0 flex items-center px-4 pt-12 z-10">
         <button
@@ -107,7 +139,7 @@ export default function ScanScreen() {
       {recentScans.length > 0 && (
         <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
           <Card size="sm" className="bg-card/90 backdrop-blur-md">
-            <CardContent className="!px-0 !py-0">
+            <CardContent className="px-0! py-0!">
               <div className="px-4 py-2.5">
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Recently Scanned</p>
               </div>
