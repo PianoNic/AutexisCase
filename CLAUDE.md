@@ -5,6 +5,7 @@
 - **Every issue or feature MUST have a GitHub issue before any work begins.**
 - **Every change MUST go through a Pull Request (PR) — no direct commits to `main`.**
 - The `main` branch is protected: PRs require at least 1 approving review.
+- **Before creating a PR, always merge `main` into the feature branch** to ensure the latest changes are included.
 
 ## Labels
 
@@ -47,6 +48,31 @@ Examples:
 - Install deps: `cd src/AutexisCase.Frontend && bun install`
 - Dev server: `bun run dev`
 - Build: `bun run build`
+- **Every frontend change MUST be verified using the Playwright MCP** before committing.
+
+## Notifications
+
+- **Play a chime sound when a task is completed OR when user input is needed.**
+- This signals the user without requiring them to watch the terminal.
+
+### Chime Commands
+
+The choo-choo train sound is located at `scripts/choo-choo.wav`.
+
+**Windows:**
+```bash
+powershell -c "(New-Object Media.SoundPlayer 'scripts/choo-choo.wav').PlaySync()"
+```
+
+**macOS:**
+```bash
+afplay scripts/choo-choo.wav
+```
+
+### When to play
+Claude will run the appropriate chime command automatically when:
+- A task or major step is completed
+- User input or a decision is required
 
 ## Branch Naming
 
