@@ -41,6 +41,8 @@ interface Batch {
   productionDate: string | null
   expiryDate: string | null
   daysRemaining: number | null
+  co2Kg: number | null
+  waterLiters: number | null
 }
 
 interface Product {
@@ -444,6 +446,42 @@ export default function ProductScreen() {
                 </div>
               ))}
             </div>
+
+            {product.batches.length > 0 && (product.batches[0].co2Kg != null || product.batches[0].waterLiters != null) && (
+              <div className="space-y-2 px-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Sustainability</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {product.batches[0].co2Kg != null && (
+                    <div className="rounded-xl bg-muted p-3 text-center">
+                      <div className="text-2xl font-semibold text-emerald-600">{product.batches[0].co2Kg}</div>
+                      <p className="text-xs text-muted-foreground mt-1">kg CO₂</p>
+                    </div>
+                  )}
+                  {product.batches[0].waterLiters != null && (
+                    <div className="rounded-xl bg-muted p-3 text-center">
+                      <div className="text-2xl font-semibold text-blue-500">{product.batches[0].waterLiters}</div>
+                      <p className="text-xs text-muted-foreground mt-1">L Water</p>
+                    </div>
+                  )}
+                </div>
+                {events.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">Per Stage:</p>
+                    <div className="space-y-1.5">
+                      {events.map((event) => (
+                        <div key={event.id} className="flex items-center justify-between text-xs px-2 py-1.5 rounded-lg bg-muted/50">
+                          <span className="text-muted-foreground">{event.step}</span>
+                          <div className="flex gap-3">
+                            {event.co2Kg != null && <span className="text-emerald-600 font-medium">{event.co2Kg} kg CO₂</span>}
+                            {event.waterLiters != null && <span className="text-blue-500 font-medium">{event.waterLiters} L</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {product.certifications.length > 0 && (
               <div className="flex flex-wrap gap-1.5 px-4">
