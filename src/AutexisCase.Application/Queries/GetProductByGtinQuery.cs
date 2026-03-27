@@ -10,7 +10,7 @@ namespace AutexisCase.Application.Queries;
 [AllowAuthenticated]
 public record GetProductByGtinQuery(string Gtin) : IQuery<ProductDto?>;
 
-public class GetProductByGtinHandler(IAppDbContext dbContext) : IQueryHandler<GetProductByGtinQuery, ProductDto?>
+public class GetProductByGtinHandler(IAppDbContext dbContext, IOpenFoodFactsService openFoodFacts) : IQueryHandler<GetProductByGtinQuery, ProductDto?>
 {
     public async ValueTask<ProductDto?> Handle(GetProductByGtinQuery request, CancellationToken cancellationToken)
     {
@@ -19,6 +19,15 @@ public class GetProductByGtinHandler(IAppDbContext dbContext) : IQueryHandler<Ge
             .Include(p => p.Batches)
             .SingleOrDefaultAsync(p => p.Gtin == request.Gtin, cancellationToken);
 
-        return product?.ToDto();
+        if (product is not null) return product.ToDto();
+
+        // Auto-fetch from Open Food Facts
+        var fetched = await openFoodFacts.FetchProductAsync(request.Gtin, cancellationToken);
+        if (fetched is null) return null;
+
+        dbContext.Products.Add(fetched);
+        await dbContext.SaveChangesAsync(cancellationToken);
+
+        return fetched.ToDto();
     }
 }

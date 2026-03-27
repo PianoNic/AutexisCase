@@ -57,7 +57,6 @@ public class OcrService : IOcrService
 
         try
         {
-            // Clean response — remove markdown code blocks if present
             var json = responseText.Trim();
             if (json.StartsWith("```")) json = json.Split('\n', 2).Length > 1 ? json.Split('\n', 2)[1] : json;
             if (json.EndsWith("```")) json = json[..^3];
