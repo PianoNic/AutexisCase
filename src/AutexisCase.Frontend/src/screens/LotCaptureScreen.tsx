@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -16,38 +16,36 @@ export default function LotCaptureScreen() {
   const [capturing, setCapturing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [manualLot, setManualLot] = useState('')
-  const [showManual, setShowManual] = useState(false)
+  const [mode, setMode] = useState<'camera' | 'manual'>('camera')
   const streamRef = useRef<MediaStream | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
 
-  // Start camera on mount
-  useState(() => {
+  useEffect(() => {
+    if (mode !== 'camera') return
+
+    let cancelled = false
     navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: 'continuous' } as any,
       audio: false,
     }).then(async stream => {
+      if (cancelled) { stream.getTracks().forEach(t => t.stop()); return }
       streamRef.current = stream
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
         setCameraReady(true)
       }
-      // Apply autofocus
-      const track = stream.getVideoTracks()[0]
-      if (track) {
-        try {
-          await track.applyConstraints({
-            advanced: [
-              { focusMode: 'continuous' } as any,
-              { exposureMode: 'continuous' } as any,
-            ],
-          })
-        } catch { /* unsupported */ }
-      }
     }).catch(() => {
-      setShowManual(true)
+      if (!cancelled) setMode('manual')
     })
-  })
+
+    return () => {
+      cancelled = true
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+      setCameraReady(false)
+    }
+  }, [mode])
 
   const captureAndProcess = async () => {
     if (!videoRef.current || !canvasRef.current || !accessToken) return
@@ -61,7 +59,6 @@ export default function LotCaptureScreen() {
     const ctx = canvas.getContext('2d')!
     ctx.drawImage(video, 0, 0)
 
-    // Convert to blob and send to OCR
     canvas.toBlob(async (blob) => {
       if (!blob) { setCapturing(false); setError('Failed to capture image'); return }
 
@@ -78,17 +75,15 @@ export default function LotCaptureScreen() {
         if (res.ok) {
           const data = await res.json()
           if (data.success && data.lotNumber) {
-            // Stop camera
             streamRef.current?.getTracks().forEach(t => t.stop())
-            // Navigate to product with both GTIN and LOT
             navigate(`/product?gtin=${gtin}&lot=${data.lotNumber}`)
             return
           }
         }
-        setError('LOT number not found. Try again or enter manually.')
+        setError('LOT nicht erkannt. Erneut versuchen oder manuell eingeben.')
         setCapturing(false)
       } catch {
-        setError('Failed to process image')
+        setError('Verarbeitung fehlgeschlagen')
         setCapturing(false)
       }
     }, 'image/jpeg', 0.9)
@@ -107,20 +102,23 @@ export default function LotCaptureScreen() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black">
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      {mode === 'camera' && (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
       <canvas ref={canvasRef} className="hidden" />
+
 
       {/* Top gradient */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-linear-to-b from-black/70 to-transparent" />
 
       {/* Header */}
-      <div className="absolute left-0 right-0 top-0 flex items-center px-4 pt-12 z-10">
+      <div className="absolute left-0 right-0 top-0 flex items-center justify-between px-4 pt-12 z-10">
         <button
           onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); navigate('/scan') }}
           className="flex h-9 w-9 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm"
@@ -131,13 +129,14 @@ export default function LotCaptureScreen() {
           </svg>
         </button>
         <div className="ml-3">
-          <span className="text-sm font-medium text-white">Scan LOT Number</span>
+          <span className="text-sm font-medium text-white">Chargennummer scannen</span>
           <p className="text-xs text-white/60">{productName}</p>
         </div>
+
       </div>
 
-      {/* Viewfinder for LOT */}
-      {cameraReady && !showManual && (
+      {/* Camera viewfinder */}
+      {mode === 'camera' && cameraReady && (
         <div className="pointer-events-none absolute inset-0 z-[5] flex flex-col items-center justify-center" style={{ paddingBottom: '200px' }}>
           <div className="relative h-20 w-72">
             <div className="absolute top-0 left-0 h-6 w-6 border-t-2 border-l-2 border-white rounded-tl-lg" />
@@ -151,6 +150,11 @@ export default function LotCaptureScreen() {
         </div>
       )}
 
+      {/* Manual mode background */}
+      {mode === 'manual' && (
+        <div className="absolute inset-0 bg-background" />
+      )}
+
       {/* Bottom controls */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
         <Card size="sm" className="bg-card/95 backdrop-blur-md">
@@ -159,7 +163,7 @@ export default function LotCaptureScreen() {
               <p className="text-xs text-destructive text-center">{error}</p>
             )}
 
-            {!showManual ? (
+            {mode === 'camera' ? (
               <>
                 <Button
                   className="w-full"
@@ -170,7 +174,7 @@ export default function LotCaptureScreen() {
                   {capturing ? 'Verarbeite...' : 'Foto aufnehmen'}
                 </Button>
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setShowManual(true)}>
+                  <Button variant="outline" className="flex-1" onClick={() => { streamRef.current?.getTracks().forEach(t => t.stop()); setMode('manual') }}>
                     Manuell eingeben
                   </Button>
                   <Button variant="ghost" className="flex-1 text-muted-foreground" onClick={skipLot}>
@@ -200,11 +204,9 @@ export default function LotCaptureScreen() {
                     Überspringen
                   </Button>
                 </div>
-                {cameraReady && (
-                  <Button variant="outline" className="w-full" onClick={() => setShowManual(false)}>
-                    Zurück zur Kamera
-                  </Button>
-                )}
+                <Button variant="outline" className="w-full" onClick={() => setMode('camera')}>
+                  Kamera verwenden
+                </Button>
               </>
             )}
           </CardContent>

@@ -79,9 +79,12 @@ export default function ScanScreen() {
   const startCamera = useCallback(async (deviceId?: string) => {
     streamRef.current?.getTracks().forEach(t => t.stop())
 
-    const videoConstraints: MediaTrackConstraints = deviceId
+    const videoConstraints: MediaTrackConstraints & Record<string, unknown> = deviceId
       ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
       : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+
+    // Samsung/Android: focusMode MUST be in initial constraints, not via applyConstraints
+    videoConstraints.focusMode = 'continuous'
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false })
@@ -91,17 +94,16 @@ export default function ScanScreen() {
         await videoRef.current.play()
       }
 
-      // Apply autofocus after stream starts
+      // Apply autofocus and detect capabilities
       const track = stream.getVideoTracks()[0]
       if (track) {
-        try {
-          await track.applyConstraints({
-            advanced: [
-              { focusMode: 'continuous' } as any,
-              { exposureMode: 'continuous' } as any,
-            ],
-          })
-        } catch { /* unsupported */ }
+        const caps = track.getCapabilities?.() as any
+        const settings: any = {}
+        if (caps?.focusMode?.includes?.('continuous')) settings.focusMode = 'continuous'
+        if (caps?.exposureMode?.includes?.('continuous')) settings.exposureMode = 'continuous'
+        if (Object.keys(settings).length > 0) {
+          try { await track.applyConstraints({ advanced: [settings] }) } catch { /* unsupported */ }
+        }
       }
 
       setError(null)
@@ -134,6 +136,9 @@ export default function ScanScreen() {
     const init = async () => {
       await startCamera()
       scannerRef.current = await createScanner()
+
+      // Wait 2s for Samsung autofocus to settle before scanning
+      await new Promise(r => setTimeout(r, 2000))
 
       // Scan loop
       interval = setInterval(async () => {
@@ -183,6 +188,7 @@ export default function ScanScreen() {
         muted
         className="absolute inset-0 h-full w-full object-cover"
       />
+
 
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-20">

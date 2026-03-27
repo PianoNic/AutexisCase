@@ -16,10 +16,13 @@
 import * as runtime from '../runtime';
 import type {
   OcrResultDto,
+  ProblemDetails,
 } from '../models/index';
 import {
     OcrResultDtoFromJSON,
     OcrResultDtoToJSON,
+    ProblemDetailsFromJSON,
+    ProblemDetailsToJSON,
 } from '../models/index';
 
 export interface ExtractLotNumberRequest {
