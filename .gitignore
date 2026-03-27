@@ -41,3 +41,6 @@ src-tauri/target/
 
 ## OpenAPI spec (generated from backend URL)
 src/AutexisCase.Frontend/openapi.json
+
+## Playwright
+.playwright-mcp/
