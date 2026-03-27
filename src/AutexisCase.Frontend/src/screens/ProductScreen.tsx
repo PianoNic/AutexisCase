@@ -1,14 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { FeatureCollection, LineString } from "geojson";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  Graticule,
-  Line,
-  Marker,
-  Sphere,
-} from "react-simple-maps";
+  AlertCircleIcon,
+  CargoShipIcon,
+  DeliveryTruck02Icon,
+  Factory02Icon,
+  Leaf02Icon,
+  Location02Icon,
+  MilkCartonIcon,
+  Navigation03Icon,
+  StoreLocation02Icon,
+  WarehouseIcon,
+} from "@hugeicons/core-free-icons";
+import maplibregl from "maplibre-gl";
+import mlcontour from "maplibre-contour";
+import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import {
   Drawer,
   DrawerContent,
@@ -22,10 +30,41 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useAppAuth } from "@/auth/use-app-auth";
 
-const GEO_URL =
-  "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+const MAP_STYLE_URL =
+  "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
+const contourDemSource = new mlcontour.DemSource({
+  url: "https://demotiles.maplibre.org/terrain-tiles/{z}/{x}/{y}.png",
+  encoding: "mapbox",
+  maxzoom: 12,
+  worker: true,
+});
+let isContourProtocolSetup = false;
 const SNAP_POINTS = [0.08, 0.55, 0.995];
 const EMPTY_EVENTS: JourneyEvent[] = [];
+type MapPoint = [number, number];
+type MapCamera = {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  bearing: number;
+  pitch: number;
+};
+const DEFAULT_CAMERA: MapCamera = {
+  longitude: 8.3,
+  latitude: 47.2,
+  zoom: 3.4,
+  bearing: 0,
+  pitch: 35,
+};
+
+interface JourneyWaypoint {
+  id?: string | null;
+  latitude: number;
+  longitude: number;
+  label?: string | null;
+  icon?: string | null;
+  transportType?: string | null;
+}
 
 interface JourneyEvent {
   id: string;
@@ -41,6 +80,8 @@ interface JourneyEvent {
   co2Kg: number | null;
   waterLiters: number | null;
   cost: number | null;
+  transportType?: string | null;
+  waypoints?: JourneyWaypoint[] | null;
 }
 
 interface Nutrition {
@@ -119,16 +160,233 @@ const batchBadgeVariant: Record<string, "default" | "secondary" | "destructive">
   Recall: "destructive",
 };
 
-function coordToRotation(
-  lon: number,
-  lat: number,
-  latOffset = 10,
-): [number, number, number] {
-  return [-lon, -(lat - latOffset), 0];
-}
-
 function interpolate(start: number, end: number, progress: number) {
   return start + (end - start) * progress;
+}
+
+function getMarkerFill(status: string) {
+  if (status === "Warning") return "#ef4444";
+  if (status === "Current") return "#f59e0b";
+  return "#22c55e";
+}
+
+function getZoomForEvent(
+  event: JourneyEvent,
+  previousEvent?: JourneyEvent,
+  nextEvent?: JourneyEvent,
+) {
+  const referencePoints = [previousEvent, nextEvent].filter(Boolean) as JourneyEvent[];
+  if (referencePoints.length === 0) return 11.5;
+
+  const span = Math.max(
+    ...referencePoints.map((point) =>
+      Math.max(
+        Math.abs(point.latitude - event.latitude),
+        Math.abs(point.longitude - event.longitude),
+      ),
+    ),
+  );
+
+  if (span <= 0.08) return 13.6;
+  if (span <= 0.2) return 12.7;
+  if (span <= 0.75) return 11.2;
+  if (span <= 2) return 9.6;
+  if (span <= 6) return 7.9;
+  if (span <= 16) return 6.1;
+  return 4.6;
+}
+
+function getBearingForEvent(
+  previousEvent: JourneyEvent | undefined,
+  nextEvent: JourneyEvent | undefined,
+) {
+  const start = previousEvent ?? nextEvent;
+  const end = nextEvent ?? previousEvent;
+  if (!start || !end) return 0;
+
+  const deltaLon = end.longitude - start.longitude;
+  const deltaLat = end.latitude - start.latitude;
+  if (deltaLon === 0 && deltaLat === 0) return 0;
+
+  return (Math.atan2(deltaLon, deltaLat) * 180) / Math.PI;
+}
+
+function getCameraForEvent(
+  event: JourneyEvent,
+  previousEvent?: JourneyEvent,
+  nextEvent?: JourneyEvent,
+): MapCamera {
+  return {
+    longitude: event.longitude,
+    latitude: event.latitude,
+    zoom: getZoomForEvent(event, previousEvent, nextEvent),
+    bearing: getBearingForEvent(previousEvent, nextEvent),
+    pitch: 48,
+  };
+}
+
+function getEventIcon(event: JourneyEvent) {
+  const signature = `${event.icon ?? ""} ${event.step} ${event.location}`.toLowerCase();
+
+  if (event.status === "Warning") return AlertCircleIcon;
+  if (signature.includes("sprout") || signature.includes("ernte") || signature.includes("farm")) {
+    return Leaf02Icon;
+  }
+  if (signature.includes("factory") || signature.includes("verarbeitung")) {
+    return Factory02Icon;
+  }
+  if (signature.includes("transport") || signature.includes("truck")) {
+    return DeliveryTruck02Icon;
+  }
+  if (signature.includes("lager") || signature.includes("warehouse")) {
+    return WarehouseIcon;
+  }
+  if (signature.includes("regal") || signature.includes("store")) {
+    return StoreLocation02Icon;
+  }
+  if (signature.includes("milk")) {
+    return MilkCartonIcon;
+  }
+
+  return Location02Icon;
+}
+
+function getTransportIcon(
+  transportType: string | null | undefined,
+  fallbackEvent: JourneyEvent,
+) {
+  const signature =
+    `${transportType ?? ""} ${fallbackEvent.icon ?? ""} ${fallbackEvent.step}`.toLowerCase();
+
+  if (
+    signature.includes("ship") ||
+    signature.includes("sea") ||
+    signature.includes("boat") ||
+    signature.includes("cargo")
+  ) {
+    return CargoShipIcon;
+  }
+  if (signature.includes("milk")) {
+    return MilkCartonIcon;
+  }
+  if (signature.includes("factory") || signature.includes("processing")) {
+    return Factory02Icon;
+  }
+  if (signature.includes("warehouse") || signature.includes("lager")) {
+    return WarehouseIcon;
+  }
+  if (signature.includes("store") || signature.includes("regal")) {
+    return StoreLocation02Icon;
+  }
+  if (signature.includes("transport") || signature.includes("truck") || signature.includes("road")) {
+    return DeliveryTruck02Icon;
+  }
+
+  return Navigation03Icon;
+}
+
+function getWaypointPoints(event: JourneyEvent) {
+  return (event.waypoints ?? []).filter(
+    (waypoint) =>
+      waypoint &&
+      Number.isFinite(waypoint.latitude) &&
+      Number.isFinite(waypoint.longitude),
+  );
+}
+
+function getLegPoints(event: JourneyEvent, nextEvent: JourneyEvent): MapPoint[] {
+  return [
+    [event.longitude, event.latitude],
+    ...getWaypointPoints(event).map(
+      (waypoint) => [waypoint.longitude, waypoint.latitude] as MapPoint,
+    ),
+    [nextEvent.longitude, nextEvent.latitude],
+  ];
+}
+
+function getPointAlongPath(points: MapPoint[], progress: number): MapPoint {
+  if (points.length === 0) return [0, 0];
+  if (points.length === 1) return points[0];
+
+  const lengths = points.slice(0, -1).map((point, index) => {
+    const nextPoint = points[index + 1];
+    return Math.hypot(nextPoint[0] - point[0], nextPoint[1] - point[1]);
+  });
+
+  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+  if (totalLength === 0) return points[0];
+
+  let traveled = totalLength * progress;
+
+  for (let index = 0; index < lengths.length; index += 1) {
+    const segmentLength = lengths[index];
+    if (traveled <= segmentLength) {
+      const start = points[index];
+      const end = points[index + 1];
+      const segmentProgress = segmentLength === 0 ? 0 : traveled / segmentLength;
+      return [
+        interpolate(start[0], end[0], segmentProgress),
+        interpolate(start[1], end[1], segmentProgress),
+      ];
+    }
+    traveled -= segmentLength;
+  }
+
+  return points.at(-1) ?? points[0];
+}
+
+function getPathUntilProgress(points: MapPoint[], progress: number): MapPoint[] {
+  if (points.length <= 1) return points;
+
+  const clamped = Math.max(0, Math.min(1, progress));
+  if (clamped === 0) return [points[0]];
+  if (clamped === 1) return points;
+
+  const lengths = points.slice(0, -1).map((point, index) => {
+    const nextPoint = points[index + 1];
+    return Math.hypot(nextPoint[0] - point[0], nextPoint[1] - point[1]);
+  });
+
+  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
+  if (totalLength === 0) return points;
+
+  let traveled = totalLength * clamped;
+  const partialPoints: MapPoint[] = [points[0]];
+
+  for (let index = 0; index < lengths.length; index += 1) {
+    const segmentLength = lengths[index];
+    const start = points[index];
+    const end = points[index + 1];
+
+    if (traveled >= segmentLength) {
+      partialPoints.push(end);
+      traveled -= segmentLength;
+      continue;
+    }
+
+    const segmentProgress = segmentLength === 0 ? 0 : traveled / segmentLength;
+    partialPoints.push([
+      interpolate(start[0], end[0], segmentProgress),
+      interpolate(start[1], end[1], segmentProgress),
+    ]);
+    break;
+  }
+
+  return partialPoints;
+}
+
+function createRouteFeatureCollection(pointsCollection: MapPoint[][]): FeatureCollection<LineString> {
+  return {
+    type: "FeatureCollection",
+    features: pointsCollection.map((points) => ({
+      type: "Feature",
+      properties: {},
+      geometry: {
+        type: "LineString",
+        coordinates: points,
+      },
+    })),
+  };
 }
 
 function formatEventDate(timestamp: string) {
@@ -151,11 +409,13 @@ export default function ProductScreen() {
   const [loading, setLoading] = useState(hasLookupTarget);
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[1]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0]);
-  const [scale, setScale] = useState(680);
-  const rotationRef = useRef(rotation);
-  const scaleRef = useRef(scale);
+  const [camera, setCamera] = useState<MapCamera>(DEFAULT_CAMERA);
+  const [routeProgress, setRouteProgress] = useState(0);
+  const activeIndexRef = useRef(activeIndex);
+  const cameraRef = useRef(camera);
   const animFrameRef = useRef(0);
+  const scrollFrameRef = useRef(0);
+  const routeAnimFrameRef = useRef(0);
   const cardsRef = useRef<Array<HTMLDivElement | null>>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isScrollSnapping = useRef(false);
@@ -170,9 +430,12 @@ export default function ProductScreen() {
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
 
   useEffect(() => {
-    rotationRef.current = rotation;
-    scaleRef.current = scale;
-  }, [rotation, scale]);
+    activeIndexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  useEffect(() => {
+    cameraRef.current = camera;
+  }, [camera]);
 
   useEffect(() => {
     if (!accessToken || !hasLookupTarget) return;
@@ -198,7 +461,15 @@ export default function ProductScreen() {
               setBatch(batchData);
               if (batchData?.journeyEvents?.length) {
                 const first = batchData.journeyEvents[0];
-                setRotation(coordToRotation(first.longitude, first.latitude));
+                setCamera(
+                  getCameraForEvent(
+                    first,
+                    undefined,
+                    batchData.journeyEvents.length > 1
+                      ? batchData.journeyEvents[1]
+                      : undefined,
+                  ),
+                );
               }
             })
             .catch(console.error);
@@ -209,23 +480,143 @@ export default function ProductScreen() {
   }, [accessToken, gtin, hasLookupTarget, id]);
 
   const events = batch?.journeyEvents ?? EMPTY_EVENTS;
+  const routeLegs = events.slice(0, -1).map((event, index) => {
+    const nextEvent = events[index + 1];
+    return {
+      id: `${event.id}-${nextEvent.id}`,
+      event,
+      nextEvent,
+      points: getLegPoints(event, nextEvent),
+      waypoints: getWaypointPoints(event),
+      transportType: event.transportType ?? null,
+    };
+  });
+  const activeLegIndex = routeLegs.length > 0 ? Math.min(activeIndex, routeLegs.length - 1) : -1;
+  const activeLeg = activeLegIndex >= 0 ? routeLegs[activeLegIndex] : null;
+  const activeTransportPoint =
+    activeLeg && activeLeg.points.length > 1
+      ? getPointAlongPath(activeLeg.points, routeProgress)
+      : null;
+  const activeRouteTrailData = createRouteFeatureCollection(
+    activeLeg ? [getPathUntilProgress(activeLeg.points, routeProgress)] : [],
+  );
+  const completedRouteData = createRouteFeatureCollection(
+    routeLegs
+      .filter((_, legIndex) => legIndex < activeLegIndex)
+      .map((leg) => leg.points),
+  );
+  const activeRouteData = createRouteFeatureCollection(
+    activeLeg ? [activeLeg.points] : [],
+  );
+  const upcomingRouteData = createRouteFeatureCollection(
+    routeLegs
+      .filter((_, legIndex) => legIndex > activeLegIndex)
+      .map((leg) => leg.points),
+  );
+
+  const handleMapLoad = useCallback((event: { target: maplibregl.Map }) => {
+    if (!isContourProtocolSetup) {
+      contourDemSource.setupMaplibre(maplibregl);
+      isContourProtocolSetup = true;
+    }
+
+    const map = event.target;
+    const firstSymbolLayerId = map
+      .getStyle()
+      .layers?.find((layer) => layer.type === "symbol")?.id;
+
+    if (!map.getSource("journey-dem")) {
+      map.addSource("journey-dem", {
+        type: "raster-dem",
+        tiles: [contourDemSource.sharedDemProtocolUrl],
+        tileSize: 512,
+        maxzoom: 12,
+      });
+    }
+
+    if (!map.getSource("journey-contours")) {
+      map.addSource("journey-contours", {
+        type: "vector",
+        tiles: [
+          contourDemSource.contourProtocolUrl({
+            overzoom: 1,
+            thresholds: {
+              9: [200, 1000],
+              10: [100, 500],
+              11: [50, 200],
+              12: [20, 100],
+              13: [20, 100],
+              14: [10, 50],
+            },
+            elevationKey: "ele",
+            levelKey: "level",
+            contourLayer: "contours",
+          }),
+        ],
+        maxzoom: 14,
+      });
+    }
+
+    if (!map.getLayer("journey-hillshade")) {
+      map.addLayer(
+        {
+          id: "journey-hillshade",
+          type: "hillshade",
+          source: "journey-dem",
+          paint: {
+            "hillshade-exaggeration": 0.2,
+            "hillshade-shadow-color": "#475569",
+            "hillshade-highlight-color": "#f8fafc",
+            "hillshade-accent-color": "#94a3b8",
+          },
+        },
+        firstSymbolLayerId,
+      );
+    }
+
+    if (!map.getLayer("journey-contours-line")) {
+      map.addLayer(
+        {
+          id: "journey-contours-line",
+          type: "line",
+          source: "journey-contours",
+          "source-layer": "contours",
+          paint: {
+            "line-color": "#64748b",
+            "line-opacity": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              9,
+              0,
+              10,
+              0.16,
+              12,
+              0.26,
+              14,
+              0.34,
+            ],
+            "line-width": ["match", ["get", "level"], 1, 1.1, 0.55],
+          },
+        },
+        firstSymbolLayerId,
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (events.length === 0) return;
 
     const activeEvent = events[activeIndex];
+    const previousEvent = activeIndex > 0 ? events[activeIndex - 1] : undefined;
+    const nextEvent = activeIndex < events.length - 1 ? events[activeIndex + 1] : undefined;
     if (!activeEvent) return;
 
     cancelAnimationFrame(animFrameRef.current);
 
-    const targetRotation = coordToRotation(
-      activeEvent.longitude,
-      activeEvent.latitude,
-    );
-    const startRotation = [...rotationRef.current] as [number, number, number];
-    const startScale = scaleRef.current;
-    const targetScale = 680;
-    const duration = 500;
+    const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
+    const startCamera = { ...cameraRef.current };
+    const duration = 700;
     const startedAt = performance.now();
 
     const animate = (time: number) => {
@@ -235,17 +626,16 @@ export default function ProductScreen() {
           ? 2 * elapsed * elapsed
           : 1 - Math.pow(-2 * elapsed + 2, 2) / 2;
 
-      const newRotation: [number, number, number] = [
-        interpolate(startRotation[0], targetRotation[0], t),
-        interpolate(startRotation[1], targetRotation[1], t),
-        0,
-      ];
-      const newScale = interpolate(startScale, targetScale, t);
+      const nextCamera: MapCamera = {
+        longitude: interpolate(startCamera.longitude, targetCamera.longitude, t),
+        latitude: interpolate(startCamera.latitude, targetCamera.latitude, t),
+        zoom: interpolate(startCamera.zoom, targetCamera.zoom, t),
+        bearing: interpolate(startCamera.bearing, targetCamera.bearing, t),
+        pitch: interpolate(startCamera.pitch, targetCamera.pitch, t),
+      };
 
-      rotationRef.current = newRotation;
-      scaleRef.current = newScale;
-      setRotation(newRotation);
-      setScale(newScale);
+      cameraRef.current = nextCamera;
+      setCamera(nextCamera);
 
       if (elapsed < 1) {
         animFrameRef.current = requestAnimationFrame(animate);
@@ -255,6 +645,32 @@ export default function ProductScreen() {
     animFrameRef.current = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(animFrameRef.current);
   }, [activeIndex, events]);
+
+  useEffect(() => {
+    if (!activeLeg) return;
+
+    cancelAnimationFrame(routeAnimFrameRef.current);
+    setRouteProgress(0);
+    const travelDuration = 9800;
+    const startedAt = performance.now();
+
+    const animateRoute = (time: number) => {
+      const elapsed = Math.min(time - startedAt, travelDuration);
+      const rawProgress = elapsed / travelDuration;
+      const progress =
+        rawProgress < 0.5
+          ? 4 * rawProgress * rawProgress * rawProgress
+          : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
+      setRouteProgress(progress);
+
+      if (elapsed < travelDuration) {
+        routeAnimFrameRef.current = requestAnimationFrame(animateRoute);
+      }
+    };
+
+    routeAnimFrameRef.current = requestAnimationFrame(animateRoute);
+    return () => cancelAnimationFrame(routeAnimFrameRef.current);
+  }, [activeLeg]);
 
   const scrollToCard = useCallback(
     (index: number, behavior: ScrollBehavior = "smooth") => {
@@ -281,11 +697,9 @@ export default function ProductScreen() {
     [],
   );
 
-  const handleScrollEnd = useCallback(() => {
-    if (isScrollSnapping.current) return;
-
+  const getClosestIndex = useCallback(() => {
     const container = scrollRef.current;
-    if (!container) return;
+    if (!container) return null;
 
     const containerRect = container.getBoundingClientRect();
     const containerCenter = containerRect.left + containerRect.width / 2;
@@ -305,10 +719,41 @@ export default function ProductScreen() {
       }
     });
 
-    if (closestIndex !== activeIndex) {
+    return closestIndex;
+  }, []);
+
+  const syncActiveIndexFromScroll = useCallback(() => {
+    const closestIndex = getClosestIndex();
+    if (closestIndex == null) return;
+
+    if (closestIndex !== activeIndexRef.current) {
+      activeIndexRef.current = closestIndex;
       setActiveIndex(closestIndex);
     }
-  }, [activeIndex]);
+  }, [getClosestIndex]);
+
+  const handleScroll = useCallback(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+
+    if (scrollFrameRef.current) return;
+
+    scrollFrameRef.current = requestAnimationFrame(() => {
+      scrollFrameRef.current = 0;
+      syncActiveIndexFromScroll();
+    });
+  }, [syncActiveIndexFromScroll]);
+
+  const handleScrollEnd = useCallback(() => {
+    if (isScrollSnapping.current) return;
+
+    if (scrollFrameRef.current) {
+      cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = 0;
+    }
+
+    syncActiveIndexFromScroll();
+  }, [syncActiveIndexFromScroll]);
 
   useEffect(() => {
     if (events.length === 0) return;
@@ -322,6 +767,17 @@ export default function ProductScreen() {
       scrollToCard(activeIndex, "smooth");
     }
   }, [activeIndex, events.length, scrollToCard]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollFrameRef.current) {
+        cancelAnimationFrame(scrollFrameRef.current);
+      }
+      if (routeAnimFrameRef.current) {
+        cancelAnimationFrame(routeAnimFrameRef.current);
+      }
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -346,69 +802,168 @@ export default function ProductScreen() {
     <div className="relative h-full w-full overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-background to-background">
         <div className="pointer-events-none absolute inset-0">
-          <ComposableMap
-            projection="geoOrthographic"
-            projectionConfig={{ rotate: rotation, scale }}
+          <Map
+            reuseMaps
+            interactive={false}
+            attributionControl={false}
+            mapStyle={MAP_STYLE_URL}
+            onLoad={handleMapLoad}
+            longitude={camera.longitude}
+            latitude={camera.latitude}
+            zoom={camera.zoom}
+            bearing={camera.bearing}
+            pitch={camera.pitch}
             style={{ width: "100%", height: "100%" }}
           >
-            <Sphere
-              id="sphere"
-              fill="#eef7f0"
-              stroke="#cfe3d5"
-              strokeWidth={0.7}
-            />
-            <Graticule stroke="#d7e6da" strokeWidth={0.45} />
-            <Geographies geography={GEO_URL}>
-              {({ geographies }: { geographies: Array<{ rsmKey: string }> }) =>
-                geographies.map((geo: { rsmKey: string }) => (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill="#dcebdd"
-                    stroke="#bfd4c4"
-                    strokeWidth={0.45}
-                    style={{
-                      default: { outline: "none" },
-                      hover: { outline: "none" },
-                      pressed: { outline: "none" },
-                    }}
-                  />
-                ))
-              }
-            </Geographies>
-
-            {events.slice(0, -1).map((event, index) => (
-              <Line
-                key={event.id}
-                from={[event.longitude, event.latitude]}
-                to={[events[index + 1].longitude, events[index + 1].latitude]}
-                stroke={index <= activeIndex ? "#22c55e" : "#b9d2c1"}
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeDasharray="5 4"
+            <Source id="journey-completed" type="geojson" data={completedRouteData}>
+              <Layer
+                id="journey-completed-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "#42695c",
+                  "line-width": 4,
+                  "line-opacity": 0.72,
+                }}
               />
-            ))}
+            </Source>
+            <Source id="journey-upcoming" type="geojson" data={upcomingRouteData}>
+              <Layer
+                id="journey-upcoming-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "#94a3b8",
+                  "line-width": 3,
+                  "line-opacity": 0.26,
+                }}
+              />
+            </Source>
+            <Source id="journey-active" type="geojson" data={activeRouteData}>
+              <Layer
+                id="journey-active-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": "#94a3b8",
+                  "line-width": 3.5,
+                  "line-opacity": 0.45,
+                }}
+              />
+            </Source>
+            <Source id="journey-active-trail" type="geojson" data={activeRouteTrailData}>
+              <Layer
+                id="journey-active-trail-line"
+                type="line"
+                layout={{ "line-cap": "round", "line-join": "round" }}
+                paint={{
+                  "line-color": activeLeg ? getMarkerFill(activeLeg.event.status) : "#42695c",
+                  "line-width": 5,
+                  "line-opacity": 0.96,
+                }}
+              />
+            </Source>
+
+            {routeLegs.map((leg, legIndex) =>
+              leg.waypoints.map((waypoint, waypointIndex) => {
+                const isActive = legIndex === activeLegIndex;
+                const transportIcon = getTransportIcon(
+                  waypoint.transportType ?? leg.transportType,
+                  leg.event,
+                );
+
+                return (
+                  <Marker
+                    key={waypoint.id ?? `${leg.id}-waypoint-${waypointIndex}`}
+                    longitude={waypoint.longitude}
+                    latitude={waypoint.latitude}
+                    anchor="center"
+                  >
+                    <div className="pointer-events-none relative flex h-5 w-5 items-center justify-center overflow-hidden rounded-full">
+                      {isActive && (
+                        <div
+                          className="map-waypoint-pulse absolute inset-0 rounded-full"
+                          style={{ backgroundColor: getMarkerFill(leg.event.status) }}
+                        />
+                      )}
+                      <div
+                        className="relative flex h-3.5 w-3.5 items-center justify-center rounded-full border bg-white shadow-sm"
+                        style={{
+                          borderColor: getMarkerFill(leg.event.status),
+                          boxShadow: "0 0 0 1.5px rgba(255,255,255,0.96)",
+                        }}
+                      >
+                          <HugeiconsIcon
+                            icon={transportIcon}
+                            strokeWidth={2}
+                            className="size-2.5 text-foreground"
+                          />
+                      </div>
+                    </div>
+                  </Marker>
+                );
+              }),
+            )}
+
+            {activeTransportPoint && activeLeg && (
+              <Marker
+                longitude={activeTransportPoint[0]}
+                latitude={activeTransportPoint[1]}
+                anchor="center"
+              >
+                <div className="pointer-events-none relative flex h-7 w-7 items-center justify-center">
+                  <div
+                    className="relative flex h-5.5 w-5.5 items-center justify-center rounded-full border-2 bg-white shadow-md"
+                    style={{
+                      borderColor: getMarkerFill(activeLeg.event.status),
+                      boxShadow:
+                        "0 0 0 2px rgba(255,255,255,0.98), 0 6px 16px rgba(15,23,42,0.18)",
+                    }}
+                  >
+                      <HugeiconsIcon
+                        icon={getTransportIcon(activeLeg.transportType, activeLeg.event)}
+                        strokeWidth={2}
+                        className="size-3.5 text-foreground"
+                      />
+                  </div>
+                </div>
+              </Marker>
+            )}
 
             {events.map((event, index) => (
               <Marker
                 key={event.id}
-                coordinates={[event.longitude, event.latitude]}
+                longitude={event.longitude}
+                latitude={event.latitude}
+                anchor="center"
               >
-                <circle
-                  r={index === activeIndex ? 6 : 4.5}
-                  fill={
-                    event.status === "Warning"
-                      ? "#ef4444"
-                      : event.status === "Current"
-                        ? "#f59e0b"
-                        : "#22c55e"
-                  }
-                  stroke="#ffffff"
-                  strokeWidth={2}
-                />
+                <div className="pointer-events-none relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full">
+                  {index === activeIndex && (
+                    <div
+                      className="map-node-pulse absolute inset-0 rounded-full"
+                      style={{ backgroundColor: getMarkerFill(event.status) }}
+                    />
+                  )}
+                  <div
+                    className="relative flex items-center justify-center rounded-full border-2 text-white shadow-md"
+                    style={{
+                      width: index === activeIndex ? 24 : 20,
+                      height: index === activeIndex ? 24 : 20,
+                      backgroundColor: getMarkerFill(event.status),
+                      borderColor: "#ffffff",
+                      boxShadow: "0 0 0 2px rgba(255,255,255,0.98)",
+                    }}
+                  >
+                      <HugeiconsIcon
+                        icon={getEventIcon(event)}
+                        strokeWidth={2}
+                        className={index === activeIndex ? "size-3.5 text-white" : "size-3 text-white"}
+                      />
+                  </div>
+                </div>
               </Marker>
             ))}
-          </ComposableMap>
+          </Map>
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 to-transparent" />
@@ -452,6 +1007,7 @@ export default function ProductScreen() {
             <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
               <div
                 ref={scrollRef}
+                onScroll={compactJourney ? undefined : handleScroll}
                 onScrollEnd={compactJourney ? undefined : handleScrollEnd}
                 onPointerDownCapture={(event) => event.stopPropagation()}
                 className={`pointer-events-auto flex items-center gap-0 overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
