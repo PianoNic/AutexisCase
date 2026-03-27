@@ -13,8 +13,25 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
 
     public DbSet<UserRoleAssignment> UserRoleAssignments => Set<UserRoleAssignment>();
 
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<JourneyEvent> JourneyEvents => Set<JourneyEvent>();
+    public DbSet<PriceStep> PriceSteps => Set<PriceStep>();
+    public DbSet<TemperatureLog> TemperatureLogs => Set<TemperatureLog>();
+    public DbSet<Alert> Alerts => Set<Alert>();
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder) => modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutexisCaseDbContext).Assembly);
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutexisCaseDbContext).Assembly);
+
+        modelBuilder.Entity<Product>(e =>
+        {
+            e.HasIndex(p => p.Gtin).IsUnique();
+            e.OwnsOne(p => p.Nutrition);
+            e.Property(p => p.Certifications).HasColumnType("jsonb");
+        });
+
+    }
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {

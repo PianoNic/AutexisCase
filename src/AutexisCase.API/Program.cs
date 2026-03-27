@@ -74,6 +74,7 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AutexisCaseDbContext>();
     dbContext.Database.Migrate();
+    await SeedData.SeedAsync(dbContext);
 }
 
 
