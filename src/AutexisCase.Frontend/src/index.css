@@ -128,3 +128,12 @@
     @apply font-sans;
     }
 }
+
+@keyframes scan {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(256px); }
+}
+
+.animate-scan {
+  animation: scan 2s linear infinite;
+}
