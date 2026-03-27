@@ -1,49 +1,105 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
+import { useAppAuth } from '@/auth/use-app-auth'
 
-const alerts = [
-  {
-    id: 1,
-    variant: 'destructive' as const,
-    title: 'Recall: Bio Vollmilch 3.5%',
-    description: 'Lot #MG-2024-0891 recalled due to contamination risk. Do not consume.',
-  },
-  {
-    id: 2,
-    variant: 'default' as const,
-    title: 'Lindt Excellence 70% cleared',
-    description: 'Previous warning resolved. Product is safe to consume.',
-  },
-]
+interface ProductSummary {
+  id: string
+  gtin: string
+  name: string
+  brand: string
+  imageUrl: string | null
+  category: string | null
+  status: number
+  nutriScore: string | null
+  riskScore: number
+}
 
-const history = [
-  { id: 1, name: 'Lindt Excellence 70%', brand: 'Lindt', origin: 'Ghana', date: 'Today', status: 'ok' },
-  { id: 2, name: 'Bio Vollmilch 3.5%', brand: 'Migros', origin: 'Switzerland', date: 'Yesterday', status: 'recall' },
-  { id: 3, name: 'Organic Sea Salt Chips', brand: 'Salazon', origin: 'USA', date: 'Mon', status: 'ok' },
-  { id: 4, name: 'Gruyère AOP', brand: 'Le Gruyère', origin: 'Switzerland', date: 'Sun', status: 'ok' },
-]
+interface AlertItem {
+  id: string
+  type: number
+  severity: number
+  title: string
+  description: string | null
+  timestamp: string
+  read: boolean
+  productId: string
+}
 
-const statusBadge: Record<string, { label: string; variant: 'default' | 'destructive' | 'secondary' }> = {
-  ok: { label: 'OK', variant: 'default' },
-  warning: { label: 'Warning', variant: 'secondary' },
-  recall: { label: 'Recall', variant: 'destructive' },
+const statusMap: Record<number, { label: string; variant: 'default' | 'destructive' | 'secondary' }> = {
+  0: { label: 'OK', variant: 'default' },
+  1: { label: 'Warning', variant: 'secondary' },
+  2: { label: 'Recall', variant: 'destructive' },
+}
+
+const statusDot: Record<number, string> = {
+  0: 'bg-primary',
+  1: 'bg-amber-500',
+  2: 'bg-destructive',
+}
+
+const severityVariant: Record<number, 'default' | 'destructive'> = {
+  0: 'default',
+  1: 'default',
+  2: 'destructive',
+}
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
+}
+
+function timeAgo(timestamp: string) {
+  const diff = Date.now() - new Date(timestamp).getTime()
+  const days = Math.floor(diff / 86400000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  if (days < 7) return new Date(timestamp).toLocaleDateString('en', { weekday: 'short' })
+  return new Date(timestamp).toLocaleDateString('en', { month: 'short', day: 'numeric' })
 }
 
 export default function HomeScreen() {
   const navigate = useNavigate()
+  const { user, accessToken } = useAppAuth()
+  const [products, setProducts] = useState<ProductSummary[]>([])
+  const [alerts, setAlerts] = useState<AlertItem[]>([])
+
+  useEffect(() => {
+    if (!accessToken) return
+    const headers = { Authorization: `Bearer ${accessToken}` }
+
+    fetch('/api/Product', { headers })
+      .then(r => r.ok ? r.json() : [])
+      .then(setProducts)
+      .catch(console.error)
+
+    fetch('/api/Product', { headers })
+      .then(r => r.ok ? r.json() : [])
+      .then(async (prods: ProductSummary[]) => {
+        const allAlerts: AlertItem[] = []
+        for (const p of prods) {
+          try {
+            const res = await fetch(`/api/Product/${p.id}`, { headers })
+            if (res.ok) {
+              const full = await res.json()
+              if (full.alerts) allAlerts.push(...full.alerts.map((a: any) => ({ ...a, productId: p.id })))
+            }
+          } catch { /* skip */ }
+        }
+        setAlerts(allAlerts)
+      })
+      .catch(console.error)
+  }, [accessToken])
 
   return (
     <div className="h-full flex flex-col bg-background">
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-12 pb-5">
-          {/* Logo */}
           <div className="flex items-center gap-2 flex-1">
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary">
               <svg className="h-4 w-4 text-primary-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round">
@@ -53,60 +109,64 @@ export default function HomeScreen() {
             </div>
             <span className="text-sm font-semibold tracking-tight">Track my Food</span>
           </div>
-          {/* User */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground hidden sm:block">Stefan K.</span>
-            <Avatar size="sm">
-              <AvatarFallback>SK</AvatarFallback>
-            </Avatar>
-          </div>
+          {user && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground hidden sm:block">{user.displayName}</span>
+              <Avatar size="sm">
+                {user.avatarUrl && <AvatarImage src={user.avatarUrl} />}
+                <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+              </Avatar>
+            </div>
+          )}
         </div>
 
         <div className="px-4 space-y-5 pb-4">
           {/* Alerts */}
-          <section className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-              Alerts
-            </p>
-            {alerts.map((alert) => (
-              <Alert key={alert.id} variant={alert.variant}>
-                <AlertTitle>{alert.title}</AlertTitle>
-                <AlertDescription>{alert.description}</AlertDescription>
-              </Alert>
-            ))}
-          </section>
+          {alerts.length > 0 && (
+            <section className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Alerts</p>
+              {alerts.map((alert) => (
+                <Alert key={alert.id} variant={severityVariant[alert.severity] ?? 'default'}>
+                  <AlertTitle>{alert.title}</AlertTitle>
+                  {alert.description && <AlertDescription>{alert.description}</AlertDescription>}
+                </Alert>
+              ))}
+            </section>
+          )}
 
-          {/* History */}
+          {/* Products */}
           <section className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
-              Recently Scanned
-            </p>
-            <Card size="sm">
-              <CardContent className="!px-0 !py-0">
-                {history.map((item, i) => (
-                  <div key={item.id}>
-                    <button
-                      onClick={() => navigate('/product')}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
-                    >
-                      {/* Status dot */}
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${item.status === 'ok' ? 'bg-primary' : item.status === 'recall' ? 'bg-destructive' : 'bg-amber-500'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.brand} · {item.origin}</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">Products</p>
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">No products yet. Scan one to get started.</p>
+            ) : (
+              <Card size="sm">
+                <CardContent className="!px-0 !py-0">
+                  {products.map((item, i) => {
+                    const status = statusMap[item.status] ?? statusMap[0]
+                    return (
+                      <div key={item.id}>
+                        <button
+                          onClick={() => navigate(`/product?id=${item.id}`)}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+                        >
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${statusDot[item.status] ?? 'bg-primary'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">{item.brand}</p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {item.nutriScore && <span className="text-xs text-muted-foreground">Nutri {item.nutriScore}</span>}
+                            <Badge variant={status.variant}>{status.label}</Badge>
+                          </div>
+                        </button>
+                        {i < products.length - 1 && <Separator />}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-muted-foreground">{item.date}</span>
-                        <Badge variant={statusBadge[item.status].variant}>
-                          {statusBadge[item.status].label}
-                        </Badge>
-                      </div>
-                    </button>
-                    {i < history.length - 1 && <Separator />}
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            )}
           </section>
         </div>
       </div>

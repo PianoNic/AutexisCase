@@ -24,6 +24,11 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AutexisCaseDbContext).Assembly);
 
+        modelBuilder.Entity<User>(e =>
+        {
+            e.HasIndex(u => u.ExternalId).IsUnique();
+        });
+
         modelBuilder.Entity<Product>(e =>
         {
             e.HasIndex(p => p.Gtin).IsUnique();
