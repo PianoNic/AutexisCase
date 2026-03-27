@@ -15,10 +15,13 @@
 
 import * as runtime from '../runtime';
 import type {
+  AlertDto,
   ProblemDetails,
   ScanRecordDto,
 } from '../models/index';
 import {
+    AlertDtoFromJSON,
+    AlertDtoToJSON,
     ProblemDetailsFromJSON,
     ProblemDetailsToJSON,
     ScanRecordDtoFromJSON,
@@ -36,7 +39,7 @@ export class ScanApi extends runtime.BaseAPI {
 
     /**
      */
-    async getMyAlertsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<any>>> {
+    async getMyAlertsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AlertDto>>> {
         const queryParameters: any = {};
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -56,12 +59,12 @@ export class ScanApi extends runtime.BaseAPI {
             query: queryParameters,
         }, initOverrides);
 
-        return new runtime.JSONApiResponse<any>(response);
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(AlertDtoFromJSON));
     }
 
     /**
      */
-    async getMyAlerts(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<any>> {
+    async getMyAlerts(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AlertDto>> {
         const response = await this.getMyAlertsRaw(initOverrides);
         return await response.value();
     }
