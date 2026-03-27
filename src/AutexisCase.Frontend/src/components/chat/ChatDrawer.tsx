@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { X, Send } from 'lucide-react'
 import { Drawer, DrawerContent } from '@/components/ui/drawer'
 import { useChat } from '@/context/ChatContext'
-import { getProduct } from '@/data/mock'
+import { productApi } from '@/api/client'
 
 const QUICK_CHIPS = [
   'Wie lange haltbar?',
@@ -14,10 +14,17 @@ const QUICK_CHIPS = [
 export function ChatDrawer() {
   const { messages, isOpen, isTyping, productContext, closeChat, sendMessage } = useChat()
   const [input, setInput] = useState('')
+  const [productName, setProductName] = useState<string | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const product = productContext ? getProduct(productContext) : null
+  useEffect(() => {
+    if (productContext) {
+      productApi.getProductById({ id: productContext }).then((p) => setProductName(p.name ?? null)).catch(() => setProductName(null))
+    } else {
+      setProductName(null)
+    }
+  }, [productContext])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -45,9 +52,9 @@ export function ChatDrawer() {
         <div className="flex items-center justify-between px-4 pt-2 pb-3 border-b shrink-0">
           <div>
             <p className="text-sm font-semibold">Food Assistent</p>
-            {product && (
+            {productName && (
               <p className="text-[10px] text-muted-foreground">
-                Kontext: {product.name}
+                Kontext: {productName}
               </p>
             )}
           </div>

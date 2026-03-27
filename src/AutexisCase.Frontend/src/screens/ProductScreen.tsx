@@ -16,7 +16,10 @@ import {
   DrawerTitle,
 } from '@/components/ui/drawer'
 import { ArrowLeft, ArrowRight, Thermometer, ShieldCheck, Leaf, TreePine, Award, Sprout, Flag } from 'lucide-react'
-import { getProduct, mapViewConfigs } from '@/data/mock'
+import { productApi } from '@/api/client'
+import type { ProductDto } from '@/api/models/ProductDto'
+import type { BatchDto } from '@/api/models/BatchDto'
+import type { JourneyEventDto } from '@/api/models/JourneyEventDto'
 import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from '@/data/mock-ai'
 import { useChat } from '@/context/ChatContext'
 import { ShelfLifeCard } from '@/components/product/ShelfLifeCard'
@@ -44,8 +47,12 @@ export default function ProductScreen() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { setProductContext } = useChat()
-  const product = getProduct(id ?? '')
 
+  const [product, setProduct] = useState<ProductDto | null>(null)
+  const [batch, setBatch] = useState<BatchDto | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  // AI features still use mock data (no backend endpoints yet)
   const shelfLife = getShelfLifePrediction(id ?? '')
   const anomalyResult = getAnomalyDetection(id ?? '')
   const sustainability = getSustainabilityAnalysis(id ?? '')
@@ -56,6 +63,19 @@ export default function ProductScreen() {
     return () => setProductContext(null)
   }, [id, setProductContext])
 
+  useEffect(() => {
+    if (!id) return
+    setLoading(true)
+    productApi.getProductById({ id }).then((p) => {
+      setProduct(p)
+      // Load the first batch if available
+      const firstBatch = p.batches?.[0]
+      if (firstBatch?.id) {
+        productApi.getBatchById({ batchId: firstBatch.id }).then(setBatch).catch(() => {})
+      }
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [id])
+
   const [activeIndex, setActiveIndex] = useState(0)
   const [rotation, setRotation] = useState<[number, number, number]>([0, 0, 0])
   const [scale, setScale] = useState(600)
@@ -64,25 +84,26 @@ export default function ProductScreen() {
   const [reportDetail, setReportDetail] = useState('')
   const [reportSent, setReportSent] = useState(false)
 
-  const coldChainOk = product ? product.status !== 'Warning' && product.status !== 'Recall' : true
+  const coldChainOk = batch ? batch.status === 0 : true // 0 = Ok, 1 = Warning, 2 = Recall
   const peekSnap = !coldChainOk ? '180px' : '140px'
   const midSnap = '330px'
   const snapPoints: (string | number)[] = [peekSnap, midSnap, 1]
   const [snap, setSnap] = useState<number | string | null>(midSnap)
 
-  const events = product?.journeyEvents ?? []
-  const configs = mapViewConfigs[id ?? ''] ?? []
+  const events: JourneyEventDto[] = batch?.journeyEvents ?? []
 
+  // Compute map rotation from journey coordinates
   useEffect(() => {
-    if (configs.length > 0) {
-      setRotation(configs[0].rotation)
-      setScale(configs[0].scale)
+    if (events.length > 0) {
+      const first = events[0]
+      setRotation([-(first.longitude ?? 0), -(first.latitude ?? 0), 0])
+      setScale(800)
     }
-  }, [id])
+  }, [batch])
 
   useEffect(() => {
-    if (configs.length === 0) return
-    const target = configs[activeIndex] ?? configs[configs.length - 1]
+    if (events.length === 0) return
+    const target = events[activeIndex] ?? events[events.length - 1]
     const startRotation: [number, number, number] = [...rotation]
     const startScale = scale
     const duration = 500
@@ -94,11 +115,11 @@ export default function ProductScreen() {
       const t = easeInOutCubic(elapsed)
 
       setRotation([
-        lerp(startRotation[0], target.rotation[0], t),
-        lerp(startRotation[1], target.rotation[1], t),
+        lerp(startRotation[0], -(target.longitude ?? 0), t),
+        lerp(startRotation[1], -(target.latitude ?? 0), t),
         0,
       ])
-      setScale(lerp(startScale, target.scale, t))
+      setScale(lerp(startScale, 800, t))
 
       if (elapsed < 1) {
         frameId = requestAnimationFrame(animate)
@@ -108,6 +129,14 @@ export default function ProductScreen() {
     frameId = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(frameId)
   }, [activeIndex])
+
+  if (loading) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-8">
+        <p className="text-sm text-muted-foreground">Laden...</p>
+      </div>
+    )
+  }
 
   if (!product) {
     return (
@@ -120,8 +149,9 @@ export default function ProductScreen() {
     )
   }
 
-  const tempData = product.temperatureLogs ?? []
+  const tempData = batch?.temperatureLogs ?? []
   const anomalies = anomalyResult?.anomalies ?? []
+  const alerts = batch?.alerts ?? []
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-background">
@@ -171,7 +201,7 @@ export default function ProductScreen() {
                 <circle
                   r={i === activeIndex ? 8 : 5.5}
                   fill={
-                    event.status === 'Warning'
+                    event.status === 2 // Warning
                       ? '#f59e0b'
                       : i === activeIndex
                         ? '#16a34a'

@@ -1,6 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { AuthProvider as OidcAuthProvider } from 'react-oidc-context'
+import { AuthProvider as OidcAuthProvider, useAuth } from 'react-oidc-context'
 import { WebStorageStateStore } from 'oidc-client-ts'
+import { setApiToken } from '@/api/client'
+
+function TokenSync({ children }: { children: ReactNode }) {
+  const auth = useAuth()
+  useEffect(() => {
+    setApiToken(auth.user?.access_token ?? null)
+  }, [auth.user?.access_token])
+  return <>{children}</>
+}
 
 interface AppConfig {
   authority: string
@@ -41,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState({}, document.title, window.location.pathname)
       }}
     >
-      {children}
+      <TokenSync>{children}</TokenSync>
     </OidcAuthProvider>
   )
 }

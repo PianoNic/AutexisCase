@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Keyboard, X } from 'lucide-react'
-import { getProductByGtin } from '@/data/mock'
+import { productApi, scanApi } from '@/api/client'
 
 export default function ScanScreen() {
   const navigate = useNavigate()
@@ -27,16 +27,27 @@ export default function ScanScreen() {
 
   const handleScan = () => {
     setScanning(true)
+    // TODO: integrate real barcode detection — for now simulates a scan
     setTimeout(() => {
       setScanning(false)
-      navigate('/product/tomatoes')
     }, 1200)
+  }
+
+  const lookupAndNavigate = async (gtin: string) => {
+    try {
+      await scanApi.recordScan({ gtin })
+      const product = await productApi.getProductByGtin({ gtin })
+      if (product?.id) {
+        navigate(`/product/${product.id}`)
+      }
+    } catch {
+      // product not found
+    }
   }
 
   const handleManualSubmit = () => {
     if (barcode.length < 8) return
-    const product = getProductByGtin(barcode)
-    navigate(product ? `/product/${product.id}` : '/product/chocolate')
+    lookupAndNavigate(barcode)
   }
 
   return (
