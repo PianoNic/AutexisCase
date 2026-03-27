@@ -28,7 +28,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 builder.Services.AddSingleton<OcrService>();
+builder.Services.AddSingleton<IOcrService>(sp => sp.GetRequiredService<OcrService>());
 builder.Services.AddHttpClient<OpenFoodFactsService>();
+builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<OpenFoodFactsService>());
 
 
 // Mediator, Validation & Authorization

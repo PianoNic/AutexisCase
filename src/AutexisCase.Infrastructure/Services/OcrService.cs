@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using AutexisCase.Application.Interfaces;
 using OpenCvSharp;
 using Sdcb.PaddleInference;
 using Sdcb.PaddleOCR;
@@ -7,7 +8,7 @@ using Sdcb.PaddleOCR.Models.Online;
 
 namespace AutexisCase.Infrastructure.Services;
 
-public class OcrService : IDisposable
+public class OcrService : IOcrService, IDisposable
 {
     private PaddleOcrAll? _engine;
     private readonly SemaphoreSlim _initLock = new(1, 1);
