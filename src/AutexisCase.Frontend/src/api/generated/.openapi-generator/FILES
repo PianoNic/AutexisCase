@@ -1,0 +1,13 @@
+.openapi-generator-ignore
+apis/AppApi.ts
+apis/AuthApi.ts
+apis/ExampleApi.ts
+apis/index.ts
+index.ts
+models/AppConfigDto.ts
+models/CreateExampleCommand.ts
+models/ExampleDto.ts
+models/ProblemDetails.ts
+models/UserDto.ts
+models/index.ts
+runtime.ts
