@@ -1,6 +1,7 @@
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
 using AutexisCase.Domain;
+using AutexisCase.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,7 +16,7 @@ public class ScanController(IAppDbContext dbContext, ICurrentUserService current
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RecordScan(string gtin, CancellationToken cancellationToken)
     {
-        var product = await dbContext.Products.FirstOrDefaultAsync(p => p.Gtin == gtin, cancellationToken);
+        var product = await dbContext.Products.Include(p => p.Batches).FirstOrDefaultAsync(p => p.Gtin == gtin, cancellationToken);
         if (product is null) return NotFound();
 
         var user = await dbContext.Users.FirstOrDefaultAsync(u => u.ExternalId == currentUserService.ExternalId, cancellationToken);
@@ -25,7 +26,11 @@ public class ScanController(IAppDbContext dbContext, ICurrentUserService current
         dbContext.ScanRecords.Add(scan);
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return Ok(new ScanRecordDto(scan.Id, product.Id, product.Name, product.Brand, product.ImageUrl, product.Status, scan.ScannedAt));
+        var worstStatus = product.Batches.Count > 0
+            ? product.Batches.Max(b => b.Status)
+            : ProductStatus.Ok;
+
+        return Ok(new ScanRecordDto(scan.Id, product.Id, product.Name, product.Brand, product.ImageUrl, worstStatus, scan.ScannedAt));
     }
 
     [HttpGet("recent", Name = "GetRecentScans")]
@@ -40,10 +45,15 @@ public class ScanController(IAppDbContext dbContext, ICurrentUserService current
             .Where(s => s.UserId == user.Id)
             .OrderByDescending(s => s.ScannedAt)
             .Take(20)
-            .Include(s => s.Product)
-            .Select(s => new ScanRecordDto(s.Id, s.ProductId, s.Product.Name, s.Product.Brand, s.Product.ImageUrl, s.Product.Status, s.ScannedAt))
+            .Include(s => s.Product).ThenInclude(p => p.Batches)
             .ToListAsync(cancellationToken);
 
-        return Ok(scans);
+        return Ok(scans.Select(s =>
+        {
+            var worstStatus = s.Product.Batches.Count > 0
+                ? s.Product.Batches.Max(b => b.Status)
+                : ProductStatus.Ok;
+            return new ScanRecordDto(s.Id, s.ProductId, s.Product.Name, s.Product.Brand, s.Product.ImageUrl, worstStatus, s.ScannedAt);
+        }).ToList());
     }
 }
