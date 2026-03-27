@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: autexiscase-postgres
+    environment:
+      POSTGRES_USER: autexiscase
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: autexiscasedb-dev
+    volumes:
+      - autexiscase-pgdata:/var/lib/postgresql
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+volumes:
+  autexiscase-pgdata:

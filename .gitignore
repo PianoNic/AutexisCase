@@ -1,0 +1,40 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## User secrets
+appsettings.*.local.json
+
+## Node / Angular
+node_modules/
+dist/
+.angular/
+.sass-cache/
+
+## Bun
+bun.lock
+
+## Environment
+.env
+*.env.local
+
+## IDE
+.idea/
+.vs/
+.vscode/
+*.swp
+*.swo
+
+## OS
+Thumbs.db
+.DS_Store
+
+## Docker
+data/
+
+## Tauri
+src-tauri/target/

@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="../AutexisCase.Application/AutexisCase.Application.csproj" />
+  <Project Path="../AutexisCase.Domain/AutexisCase.Domain.csproj" />
+  <Project Path="../AutexisCase.Infrastructure/AutexisCase.Infrastructure.csproj" />
+  <Project Path="../AutexisCase.Tests/AutexisCase.Tests.csproj" />
+  <Project Path="AutexisCase.API.csproj" />
+</Solution>
