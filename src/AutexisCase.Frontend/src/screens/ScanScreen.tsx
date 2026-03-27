@@ -153,7 +153,7 @@ export default function ScanScreen() {
               } catch { /* best effort */ }
             }
 
-            navigate(`/product?gtin=${code}`)
+            navigate(`/scan/lot?gtin=${code}`)
           }
         } catch { /* continue */ }
       }, 100)

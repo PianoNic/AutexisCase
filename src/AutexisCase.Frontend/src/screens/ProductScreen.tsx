@@ -144,6 +144,7 @@ export default function ProductScreen() {
   const { accessToken } = useAppAuth();
   const id = searchParams.get("id");
   const gtin = searchParams.get("gtin");
+  const lot = searchParams.get("lot");
   const hasLookupTarget = Boolean(id || gtin);
   const [product, setProduct] = useState<Product | null>(null);
   const [batch, setBatch] = useState<Batch | null>(null);
@@ -181,9 +182,15 @@ export default function ProductScreen() {
       .then((response) => (response.ok ? response.json() : null))
       .then((data: Product | null) => {
         setProduct(data);
-        if (data?.batches?.length) {
-          const batchId = data.batches[0].id;
-          fetch(`/api/Product/batch/${batchId}`, {
+        // If LOT provided, look up specific batch; otherwise use first batch
+        const batchUrl = lot && gtin
+          ? `/api/Product/batch/lookup?gtin=${gtin}&lot=${encodeURIComponent(lot)}`
+          : data?.batches?.length
+            ? `/api/Product/batch/${data.batches[0].id}`
+            : null;
+
+        if (batchUrl) {
+          fetch(batchUrl, {
             headers: { Authorization: `Bearer ${accessToken}` },
           })
             .then((r) => (r.ok ? r.json() : null))
