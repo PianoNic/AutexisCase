@@ -789,7 +789,7 @@ export default function ProductScreen() {
                       style={{
                         flex: compactJourney
                           ? '0 0 auto'
-                          : expandedCard && index === activeIndex
+                          : expandedCard
                             ? '0 0 85vw'
                             : '0 0 280px',
                         transition: 'flex-basis 400ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -806,8 +806,8 @@ export default function ProductScreen() {
                         <CardContent
                           className="transition-all duration-400 overflow-hidden"
                           style={{
-                            padding: compactJourney ? "4px 10px" : expandedCard && index === activeIndex ? "16px" : "16px",
-                            maxHeight: compactJourney ? "32px" : expandedCard && index === activeIndex ? "600px" : "100px",
+                            padding: compactJourney ? "4px 10px" : expandedCard ? "16px" : "16px",
+                            maxHeight: compactJourney ? "32px" : expandedCard ? "600px" : "100px",
                             transition: "max-height 400ms cubic-bezier(0.4, 0, 0.2, 1), padding 300ms ease",
                           }}
                         >
@@ -840,7 +840,7 @@ export default function ProductScreen() {
                               </div>
 
                               {/* Expanded detail content */}
-                              {expandedCard && index === activeIndex && (() => {
+                              {expandedCard && (() => {
                                 const prevEv = index > 0 ? events[index - 1] : null;
                                 const hrs = prevEv
                                   ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEv.timestamp).getTime()) / 3600000)
@@ -888,29 +888,6 @@ export default function ProductScreen() {
                                           <div className="h-3 w-3/5 rounded bg-muted animate-pulse" />
                                         </div>
                                       )}
-                                    </div>
-
-                                    {/* Quality & compliance */}
-                                    <div className="rounded-lg bg-primary/5 border border-primary/10 px-3 py-2.5 space-y-1.5">
-                                      <p className="text-[10px] text-primary font-semibold uppercase tracking-wider">Qualitätssicherung</p>
-                                      <div className="flex flex-wrap gap-1.5">
-                                        {event.temperature != null && (
-                                          <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
-                                            Temperatur überwacht
-                                          </span>
-                                        )}
-                                        <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
-                                          Rückverfolgbar
-                                        </span>
-                                        <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
-                                          HACCP konform
-                                        </span>
-                                        {getStatusString(event.status) === "Completed" && (
-                                          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] text-emerald-700">
-                                            ✓ Geprüft
-                                          </span>
-                                        )}
-                                      </div>
                                     </div>
 
                                     {/* Location detail */}
