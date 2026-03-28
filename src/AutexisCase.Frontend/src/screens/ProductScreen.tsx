@@ -402,11 +402,10 @@ export default function ProductScreen() {
   const [loading, setLoading] = useState(hasLookupTarget);
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[1]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [camera, setCamera] = useState<MapCamera>(DEFAULT_CAMERA);
   const [routeProgress, setRouteProgress] = useState(0);
+  const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
   const activeIndexRef = useRef(activeIndex);
-  const cameraRef = useRef(camera);
   const animFrameRef = useRef(0);
   const scrollFrameRef = useRef(0);
   const routeAnimFrameRef = useRef(0);
@@ -415,6 +414,10 @@ export default function ProductScreen() {
   const isScrollSnapping = useRef(false);
   const clickedRef = useRef(false);
   const initializedRef = useRef(false);
+  const mapInstanceRef = useRef<maplibregl.Map | null>(null);
+  const isUserInteractingRef = useRef(false);
+  const dashAnimFrameRef = useRef(0);
+  const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
   const currentSnap = typeof snap === "number" ? snap : SNAP_POINTS[1];
   const drawerProgress =
     (currentSnap - SNAP_POINTS[0]) /
@@ -428,8 +431,8 @@ export default function ProductScreen() {
   }, [activeIndex]);
 
   useEffect(() => {
-    cameraRef.current = camera;
-  }, [camera]);
+    snapRef.current = snap;
+  }, [snap]);
 
   useEffect(() => {
     if (!accessToken || !hasLookupTarget) return;
@@ -454,16 +457,6 @@ export default function ProductScreen() {
             .then((batchData: Batch | null) => {
               setBatch(batchData);
               if (batchData?.journeyEvents?.length) {
-                const first = batchData.journeyEvents[0];
-                setCamera(
-                  getCameraForEvent(
-                    first,
-                    undefined,
-                    batchData.journeyEvents.length > 1
-                      ? batchData.journeyEvents[1]
-                      : undefined,
-                  ),
-                );
                 // Fetch real route polylines
                 if (batchData.id) {
                   fetch(`/api/Product/batch/${batchData.id}/route`, {
@@ -529,55 +522,72 @@ export default function ProductScreen() {
 
   const handleMapLoad = useCallback((event: { target: maplibregl.Map }) => {
     const map = event.target;
-    const firstSymbolLayerId = map
-      .getStyle()
-      .layers?.find((layer: any) => layer.type === "symbol")?.id;
+    mapInstanceRef.current = map;
+    setMapLoaded(true);
 
-    // No terrain/contour layers — clean map
-    void firstSymbolLayerId;
+    // Flowing dash animation for upcoming + active-bg paths
+    const dashSequence = [
+      [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+      [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
+      [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5],
+      [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1],
+      [0, 3.5, 3, 0.5], [0, 4, 3, 0],
+    ];
+    let step = 0;
+    let lastFrameTime = 0;
+    const stepInterval = 60; // ms per step
+
+    const animateDashes = (time: number) => {
+      if (time - lastFrameTime >= stepInterval) {
+        step = (step + 1) % dashSequence.length;
+        const dash = dashSequence[step];
+        try {
+          if (map.getLayer("journey-upcoming-line")) {
+            map.setPaintProperty("journey-upcoming-line", "line-dasharray", dash);
+          }
+          if (map.getLayer("journey-active-line")) {
+            map.setPaintProperty("journey-active-line", "line-dasharray", dash);
+          }
+        } catch {
+          // layers may not exist yet
+        }
+        lastFrameTime = time;
+      }
+      dashAnimFrameRef.current = requestAnimationFrame(animateDashes);
+    };
+    dashAnimFrameRef.current = requestAnimationFrame(animateDashes);
   }, []);
 
   useEffect(() => {
-    if (events.length === 0) return;
+    if (events.length === 0 || !mapInstanceRef.current) return;
+    if (isUserInteractingRef.current) return;
 
+    const map = mapInstanceRef.current;
     const activeEvent = events[activeIndex];
     const previousEvent = activeIndex > 0 ? events[activeIndex - 1] : undefined;
     const nextEvent = activeIndex < events.length - 1 ? events[activeIndex + 1] : undefined;
     if (!activeEvent) return;
 
-    cancelAnimationFrame(animFrameRef.current);
-
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
-    const startCamera = { ...cameraRef.current };
-    const duration = 1500;
-    const startedAt = performance.now();
 
-    const animate = (time: number) => {
-      const elapsed = Math.min(1, (time - startedAt) / duration);
-      const t =
-        elapsed < 0.5
-          ? 2 * elapsed * elapsed
-          : 1 - Math.pow(-2 * elapsed + 2, 2) / 2;
+    // Shift camera south so the event marker renders in the visible area above the drawer.
+    const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
+    const visibleCenterFraction = (1 - drawerFraction) / 2;
+    const offsetFraction = 0.5 - visibleCenterFraction;
+    const degreesPerPixel = 360 / (512 * Math.pow(2, targetCamera.zoom));
+    const pitchFactor = 1 / Math.cos((48 * Math.PI) / 180);
+    targetCamera.latitude -= offsetFraction * 700 * degreesPerPixel * pitchFactor;
 
-      const nextCamera: MapCamera = {
-        longitude: interpolate(startCamera.longitude, targetCamera.longitude, t),
-        latitude: interpolate(startCamera.latitude, targetCamera.latitude, t),
-        zoom: interpolate(startCamera.zoom, targetCamera.zoom, t),
-        bearing: interpolate(startCamera.bearing, targetCamera.bearing, t),
-        pitch: interpolate(startCamera.pitch, targetCamera.pitch, t),
-      };
-
-      cameraRef.current = nextCamera;
-      setCamera(nextCamera);
-
-      if (elapsed < 1) {
-        animFrameRef.current = requestAnimationFrame(animate);
-      }
-    };
-
-    animFrameRef.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animFrameRef.current);
-  }, [activeIndex, events]);
+    map.easeTo({
+      center: [targetCamera.longitude, targetCamera.latitude],
+      zoom: targetCamera.zoom,
+      bearing: targetCamera.bearing,
+      pitch: targetCamera.pitch,
+      duration: 1500,
+      easing: (t) =>
+        t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+    });
+  }, [activeIndex, events, mapLoaded]);
 
   useEffect(() => {
     if (!activeLeg) return;
@@ -604,6 +614,15 @@ export default function ProductScreen() {
     routeAnimFrameRef.current = requestAnimationFrame(animateRoute);
     return () => cancelAnimationFrame(routeAnimFrameRef.current);
   }, [activeLeg]);
+
+  const handleInteractionStart = useCallback(() => {
+    isUserInteractingRef.current = true;
+    mapInstanceRef.current?.stop();
+  }, []);
+
+  const handleInteractionEnd = useCallback(() => {
+    isUserInteractingRef.current = false;
+  }, []);
 
   const scrollToCard = useCallback(
     (index: number, behavior: ScrollBehavior = "smooth") => {
@@ -709,6 +728,9 @@ export default function ProductScreen() {
       if (routeAnimFrameRef.current) {
         cancelAnimationFrame(routeAnimFrameRef.current);
       }
+      if (dashAnimFrameRef.current) {
+        cancelAnimationFrame(dashAnimFrameRef.current);
+      }
     };
   }, []);
 
@@ -734,18 +756,17 @@ export default function ProductScreen() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-background to-background">
-        <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0" data-vaul-no-drag>
           <Map
             reuseMaps
-            interactive={false}
             attributionControl={false}
             mapStyle={MAP_STYLE_URL}
+            initialViewState={DEFAULT_CAMERA}
             onLoad={handleMapLoad}
-            longitude={camera.longitude}
-            latitude={camera.latitude}
-            zoom={camera.zoom}
-            bearing={camera.bearing}
-            pitch={camera.pitch}
+            onDragStart={handleInteractionStart}
+            onDragEnd={handleInteractionEnd}
+            onZoomStart={handleInteractionStart}
+            onZoomEnd={handleInteractionEnd}
             style={{ width: "100%", height: "100%" }}
           >
             <Source id="journey-completed" type="geojson" data={completedRouteData}>
@@ -754,9 +775,9 @@ export default function ProductScreen() {
                 type="line"
                 layout={{ "line-cap": "round", "line-join": "round" }}
                 paint={{
-                  "line-color": "#42695c",
+                  "line-color": "#22c55e",
                   "line-width": 4,
-                  "line-opacity": 0.72,
+                  "line-opacity": 0.9,
                 }}
               />
             </Source>
@@ -766,9 +787,9 @@ export default function ProductScreen() {
                 type="line"
                 layout={{ "line-cap": "round", "line-join": "round" }}
                 paint={{
-                  "line-color": "#94a3b8",
-                  "line-width": 3,
-                  "line-opacity": 0.26,
+                  "line-color": "#60a5fa",
+                  "line-width": 3.5,
+                  "line-opacity": 0.85,
                 }}
               />
             </Source>
@@ -778,7 +799,7 @@ export default function ProductScreen() {
                 type="line"
                 layout={{ "line-cap": "round", "line-join": "round" }}
                 paint={{
-                  "line-color": "#94a3b8",
+                  "line-color": "#f59e0b",
                   "line-width": 3.5,
                   "line-opacity": 0.45,
                 }}
