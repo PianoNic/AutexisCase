@@ -153,10 +153,6 @@ const batchBadgeVariant: Record<string, "default" | "secondary" | "destructive">
   Recall: "destructive",
 };
 
-function interpolate(start: number, end: number, progress: number) {
-  return start + (end - start) * progress;
-}
-
 function getMarkerFill(status: string) {
   if (status === "Warning") return "#ef4444";
   if (status === "Current") return "#f59e0b";
@@ -297,83 +293,14 @@ function getLegPoints(event: JourneyEvent, nextEvent: JourneyEvent): MapPoint[] 
   ];
 }
 
-function getPointAlongPath(points: MapPoint[], progress: number): MapPoint {
-  if (points.length === 0) return [0, 0];
-  if (points.length === 1) return points[0];
-
-  const lengths = points.slice(0, -1).map((point, index) => {
-    const nextPoint = points[index + 1];
-    return Math.hypot(nextPoint[0] - point[0], nextPoint[1] - point[1]);
-  });
-
-  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
-  if (totalLength === 0) return points[0];
-
-  let traveled = totalLength * progress;
-
-  for (let index = 0; index < lengths.length; index += 1) {
-    const segmentLength = lengths[index];
-    if (traveled <= segmentLength) {
-      const start = points[index];
-      const end = points[index + 1];
-      const segmentProgress = segmentLength === 0 ? 0 : traveled / segmentLength;
-      return [
-        interpolate(start[0], end[0], segmentProgress),
-        interpolate(start[1], end[1], segmentProgress),
-      ];
-    }
-    traveled -= segmentLength;
-  }
-
-  return points.at(-1) ?? points[0];
-}
-
-function getPathUntilProgress(points: MapPoint[], progress: number): MapPoint[] {
-  if (points.length <= 1) return points;
-
-  const clamped = Math.max(0, Math.min(1, progress));
-  if (clamped === 0) return [points[0]];
-  if (clamped === 1) return points;
-
-  const lengths = points.slice(0, -1).map((point, index) => {
-    const nextPoint = points[index + 1];
-    return Math.hypot(nextPoint[0] - point[0], nextPoint[1] - point[1]);
-  });
-
-  const totalLength = lengths.reduce((sum, length) => sum + length, 0);
-  if (totalLength === 0) return points;
-
-  let traveled = totalLength * clamped;
-  const partialPoints: MapPoint[] = [points[0]];
-
-  for (let index = 0; index < lengths.length; index += 1) {
-    const segmentLength = lengths[index];
-    const start = points[index];
-    const end = points[index + 1];
-
-    if (traveled >= segmentLength) {
-      partialPoints.push(end);
-      traveled -= segmentLength;
-      continue;
-    }
-
-    const segmentProgress = segmentLength === 0 ? 0 : traveled / segmentLength;
-    partialPoints.push([
-      interpolate(start[0], end[0], segmentProgress),
-      interpolate(start[1], end[1], segmentProgress),
-    ]);
-    break;
-  }
-
-  return partialPoints;
-}
-
-function createRouteFeatureCollection(pointsCollection: MapPoint[][]): FeatureCollection<LineString> {
+function createRouteFeatureCollection(
+  legs: { points: MapPoint[]; color: string }[],
+): FeatureCollection<LineString> {
   return {
     type: "FeatureCollection",
-    features: pointsCollection.map((points) => ({
+    features: legs.map(({ points, color }) => ({
       type: "Feature",
-      properties: {},
+      properties: { color },
       geometry: {
         type: "LineString",
         coordinates: points,
@@ -402,13 +329,11 @@ export default function ProductScreen() {
   const [loading, setLoading] = useState(hasLookupTarget);
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[1]);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [routeProgress, setRouteProgress] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
   const activeIndexRef = useRef(activeIndex);
   const animFrameRef = useRef(0);
   const scrollFrameRef = useRef(0);
-  const routeAnimFrameRef = useRef(0);
   const cardsRef = useRef<Array<HTMLDivElement | null>>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isScrollSnapping = useRef(false);
@@ -416,7 +341,6 @@ export default function ProductScreen() {
   const initializedRef = useRef(false);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const isUserInteractingRef = useRef(false);
-  const dashAnimFrameRef = useRef(0);
   const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
   const currentSnap = typeof snap === "number" ? snap : SNAP_POINTS[1];
   const drawerProgress =
@@ -497,65 +421,16 @@ export default function ProductScreen() {
       transportType: event.transportType ?? null,
     };
   });
-  const activeLegIndex = routeLegs.length > 0 ? Math.min(activeIndex, routeLegs.length - 1) : -1;
-  const activeLeg = activeLegIndex >= 0 ? routeLegs[activeLegIndex] : null;
-  const activeTransportPoint =
-    activeLeg && activeLeg.points.length > 1
-      ? getPointAlongPath(activeLeg.points, routeProgress)
-      : null;
-  const activeRouteTrailData = createRouteFeatureCollection(
-    activeLeg ? [getPathUntilProgress(activeLeg.points, routeProgress)] : [],
-  );
-  const completedRouteData = createRouteFeatureCollection(
-    routeLegs
-      .filter((_, legIndex) => legIndex < activeLegIndex)
-      .map((leg) => leg.points),
-  );
-  const activeRouteData = createRouteFeatureCollection(
-    activeLeg ? [activeLeg.points] : [],
-  );
-  const upcomingRouteData = createRouteFeatureCollection(
-    routeLegs
-      .filter((_, legIndex) => legIndex > activeLegIndex)
-      .map((leg) => leg.points),
+  const allRouteData = createRouteFeatureCollection(
+    routeLegs.map((leg) => ({
+      points: leg.points,
+      color: getMarkerFill(leg.event.status),
+    })),
   );
 
   const handleMapLoad = useCallback((event: { target: maplibregl.Map }) => {
-    const map = event.target;
-    mapInstanceRef.current = map;
+    mapInstanceRef.current = event.target;
     setMapLoaded(true);
-
-    // Flowing dash animation for upcoming + active-bg paths
-    const dashSequence = [
-      [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
-      [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0],
-      [0, 0.5, 3, 3.5], [0, 1, 3, 3], [0, 1.5, 3, 2.5],
-      [0, 2, 3, 2], [0, 2.5, 3, 1.5], [0, 3, 3, 1],
-      [0, 3.5, 3, 0.5], [0, 4, 3, 0],
-    ];
-    let step = 0;
-    let lastFrameTime = 0;
-    const stepInterval = 60; // ms per step
-
-    const animateDashes = (time: number) => {
-      if (time - lastFrameTime >= stepInterval) {
-        step = (step + 1) % dashSequence.length;
-        const dash = dashSequence[step];
-        try {
-          if (map.getLayer("journey-upcoming-line")) {
-            map.setPaintProperty("journey-upcoming-line", "line-dasharray", dash);
-          }
-          if (map.getLayer("journey-active-line")) {
-            map.setPaintProperty("journey-active-line", "line-dasharray", dash);
-          }
-        } catch {
-          // layers may not exist yet
-        }
-        lastFrameTime = time;
-      }
-      dashAnimFrameRef.current = requestAnimationFrame(animateDashes);
-    };
-    dashAnimFrameRef.current = requestAnimationFrame(animateDashes);
   }, []);
 
   useEffect(() => {
@@ -588,32 +463,6 @@ export default function ProductScreen() {
         t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
     });
   }, [activeIndex, events, mapLoaded]);
-
-  useEffect(() => {
-    if (!activeLeg) return;
-
-    cancelAnimationFrame(routeAnimFrameRef.current);
-    setRouteProgress(0);
-    const travelDuration = 18000;
-    const startedAt = performance.now();
-
-    const animateRoute = (time: number) => {
-      const elapsed = Math.min(time - startedAt, travelDuration);
-      const rawProgress = elapsed / travelDuration;
-      const progress =
-        rawProgress < 0.5
-          ? 4 * rawProgress * rawProgress * rawProgress
-          : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
-      setRouteProgress(progress);
-
-      if (elapsed < travelDuration) {
-        routeAnimFrameRef.current = requestAnimationFrame(animateRoute);
-      }
-    };
-
-    routeAnimFrameRef.current = requestAnimationFrame(animateRoute);
-    return () => cancelAnimationFrame(routeAnimFrameRef.current);
-  }, [activeLeg]);
 
   const handleInteractionStart = useCallback(() => {
     isUserInteractingRef.current = true;
@@ -725,12 +574,6 @@ export default function ProductScreen() {
       if (scrollFrameRef.current) {
         cancelAnimationFrame(scrollFrameRef.current);
       }
-      if (routeAnimFrameRef.current) {
-        cancelAnimationFrame(routeAnimFrameRef.current);
-      }
-      if (dashAnimFrameRef.current) {
-        cancelAnimationFrame(dashAnimFrameRef.current);
-      }
     };
   }, []);
 
@@ -769,58 +612,21 @@ export default function ProductScreen() {
             onZoomEnd={handleInteractionEnd}
             style={{ width: "100%", height: "100%" }}
           >
-            <Source id="journey-completed" type="geojson" data={completedRouteData}>
+            <Source id="journey-routes" type="geojson" data={allRouteData}>
               <Layer
-                id="journey-completed-line"
+                id="journey-routes-line"
                 type="line"
                 layout={{ "line-cap": "round", "line-join": "round" }}
                 paint={{
-                  "line-color": "#22c55e",
+                  "line-color": ["get", "color"],
                   "line-width": 4,
                   "line-opacity": 0.9,
                 }}
               />
             </Source>
-            <Source id="journey-upcoming" type="geojson" data={upcomingRouteData}>
-              <Layer
-                id="journey-upcoming-line"
-                type="line"
-                layout={{ "line-cap": "round", "line-join": "round" }}
-                paint={{
-                  "line-color": "#60a5fa",
-                  "line-width": 3.5,
-                  "line-opacity": 0.85,
-                }}
-              />
-            </Source>
-            <Source id="journey-active" type="geojson" data={activeRouteData}>
-              <Layer
-                id="journey-active-line"
-                type="line"
-                layout={{ "line-cap": "round", "line-join": "round" }}
-                paint={{
-                  "line-color": "#f59e0b",
-                  "line-width": 3.5,
-                  "line-opacity": 0.45,
-                }}
-              />
-            </Source>
-            <Source id="journey-active-trail" type="geojson" data={activeRouteTrailData}>
-              <Layer
-                id="journey-active-trail-line"
-                type="line"
-                layout={{ "line-cap": "round", "line-join": "round" }}
-                paint={{
-                  "line-color": activeLeg ? getMarkerFill(activeLeg.event.status) : "#42695c",
-                  "line-width": 5,
-                  "line-opacity": 0.96,
-                }}
-              />
-            </Source>
 
-            {routeLegs.map((leg, legIndex) =>
+            {routeLegs.map((leg) =>
               leg.waypoints.map((waypoint, waypointIndex) => {
-                const isActive = legIndex === activeLegIndex;
                 const transportIcon = getTransportIcon(
                   waypoint.transportType ?? leg.transportType,
                   leg.event,
@@ -834,12 +640,6 @@ export default function ProductScreen() {
                     anchor="center"
                   >
                     <div className="pointer-events-none relative flex h-5 w-5 items-center justify-center overflow-hidden rounded-full">
-                      {isActive && (
-                        <div
-                          className="map-waypoint-pulse absolute inset-0 rounded-full"
-                          style={{ backgroundColor: getMarkerFill(leg.event.status) }}
-                        />
-                      )}
                       <div
                         className="relative flex h-3.5 w-3.5 items-center justify-center rounded-full border bg-white shadow-sm"
                         style={{
@@ -857,31 +657,6 @@ export default function ProductScreen() {
                   </Marker>
                 );
               }),
-            )}
-
-            {activeTransportPoint && activeLeg && (
-              <Marker
-                longitude={activeTransportPoint[0]}
-                latitude={activeTransportPoint[1]}
-                anchor="center"
-              >
-                <div className="pointer-events-none relative flex h-7 w-7 items-center justify-center">
-                  <div
-                    className="relative flex h-5.5 w-5.5 items-center justify-center rounded-full border-2 bg-white shadow-md"
-                    style={{
-                      borderColor: getMarkerFill(activeLeg.event.status),
-                      boxShadow:
-                        "0 0 0 2px rgba(255,255,255,0.98), 0 6px 16px rgba(15,23,42,0.18)",
-                    }}
-                  >
-                      <HugeiconsIcon
-                        icon={getTransportIcon(activeLeg.transportType, activeLeg.event)}
-                        strokeWidth={2}
-                        className="size-3.5 text-foreground"
-                      />
-                  </div>
-                </div>
-              </Marker>
             )}
 
             {events.map((event, index) => (
