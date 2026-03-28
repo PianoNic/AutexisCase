@@ -8,6 +8,19 @@ function TokenSync({ children }: { children: ReactNode }) {
   useEffect(() => {
     setApiToken(auth.user?.access_token ?? null)
   }, [auth.user?.access_token])
+
+  // Auto-logout on token expiry
+  useEffect(() => {
+    if (!auth.user) return
+    const expiresIn = (auth.user.expires_at ?? 0) - Math.floor(Date.now() / 1000)
+    if (expiresIn <= 0) {
+      auth.removeUser()
+      return
+    }
+    const timer = setTimeout(() => auth.removeUser(), expiresIn * 1000)
+    return () => clearTimeout(timer)
+  }, [auth.user?.expires_at])
+
   return <>{children}</>
 }
 
