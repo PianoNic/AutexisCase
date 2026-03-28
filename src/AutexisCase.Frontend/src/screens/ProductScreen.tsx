@@ -5,12 +5,18 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertCircleIcon,
   CargoShipIcon,
+  CoffeeBeansIcon,
+  ContainerTruckIcon,
   DeliveryTruck02Icon,
+  DropletIcon,
   Factory02Icon,
   Leaf02Icon,
   Location02Icon,
   MilkCartonIcon,
+  NaturalFoodIcon,
   Navigation03Icon,
+  OrganicFoodIcon,
+  Package02Icon,
   StoreLocation02Icon,
   WarehouseIcon,
 } from "@hugeicons/core-free-icons";
@@ -182,25 +188,19 @@ function getCameraForEvent(
 function getEventIcon(event: JourneyEvent) {
   const signature = `${event.icon ?? ""} ${event.step ?? ""} ${event.location ?? ""}`.toLowerCase();
 
-  if (getStatusString(event.status) === "Warning") return AlertCircleIcon;
-  if (signature.includes("sprout") || signature.includes("ernte") || signature.includes("farm")) {
-    return Leaf02Icon;
-  }
-  if (signature.includes("factory") || signature.includes("verarbeitung")) {
-    return Factory02Icon;
-  }
-  if (signature.includes("transport") || signature.includes("truck")) {
-    return DeliveryTruck02Icon;
-  }
-  if (signature.includes("lager") || signature.includes("warehouse")) {
-    return WarehouseIcon;
-  }
-  if (signature.includes("regal") || signature.includes("store")) {
-    return StoreLocation02Icon;
-  }
-  if (signature.includes("milk")) {
-    return MilkCartonIcon;
-  }
+  if (getStatusString(event.status) === "Warning" || signature.includes("rückruf") || signature.includes("recall")) return AlertCircleIcon;
+  if (signature.includes("kakao") || signature.includes("cocoa") || signature.includes("bohne") || signature.includes("bean")) return CoffeeBeansIcon;
+  if (signature.includes("pistazie") || signature.includes("haselnuss") || signature.includes("nuss") || signature.includes("nut")) return NaturalFoodIcon;
+  if (signature.includes("ernte") || signature.includes("harvest") || signature.includes("farm") || signature.includes("feld")) return Leaf02Icon;
+  if (signature.includes("milch") || signature.includes("milk") || signature.includes("dairy") || signature.includes("emmi")) return MilkCartonIcon;
+  if (signature.includes("beschaffung") || signature.includes("sourcing") || signature.includes("einkauf")) return OrganicFoodIcon;
+  if (signature.includes("verarbeitung") || signature.includes("factory") || signature.includes("produktion") || signature.includes("chocolat") || signature.includes("frey")) return Factory02Icon;
+  if (signature.includes("seetransport") || signature.includes("schiff") || signature.includes("ship") || signature.includes("sea") || signature.includes("mittelmeer")) return CargoShipIcon;
+  if (signature.includes("autobahn") || signature.includes("transport") || signature.includes("truck") || signature.includes("road")) return ContainerTruckIcon;
+  if (signature.includes("zentrallager") || signature.includes("lager") || signature.includes("warehouse") || signature.includes("mvb")) return WarehouseIcon;
+  if (signature.includes("verpackung") || signature.includes("package") || signature.includes("pack")) return Package02Icon;
+  if (signature.includes("regal") || signature.includes("store") || signature.includes("coop") || signature.includes("migros") || signature.includes("laden")) return StoreLocation02Icon;
+  if (signature.includes("wasser") || signature.includes("water") || signature.includes("reinigung")) return DropletIcon;
 
   return Location02Icon;
 }
@@ -854,9 +854,9 @@ export default function ProductScreen() {
                         >
                           {compactJourney ? (
                             <div className="flex items-center gap-2">
-                              <div
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
-                              />
+                              <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}>
+                                <HugeiconsIcon icon={getEventIcon(event)} strokeWidth={2.5} className="size-2.5" />
+                              </div>
                               <span className="text-xs font-medium">
                                 {event.step}
                               </span>
@@ -866,9 +866,9 @@ export default function ProductScreen() {
                               {/* Header */}
                               <div className="flex items-center gap-2.5">
                                 <div
-                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
                                 >
-                                  {index + 1}
+                                  <HugeiconsIcon icon={getEventIcon(event)} strokeWidth={2} className="size-3.5" />
                                 </div>
                                 <p className="text-sm font-semibold leading-tight">
                                   {event.step}
