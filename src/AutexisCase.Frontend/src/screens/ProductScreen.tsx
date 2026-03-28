@@ -36,7 +36,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { productApi, getJourneyEventDescription } from "@/api/client";
+import { productApi, getJourneyEventDescription, getPersonalizedView } from "@/api/client";
 import type { ProductDto } from "@/api/models/ProductDto";
 import type { BatchDto } from "@/api/models/BatchDto";
 import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
@@ -311,6 +311,9 @@ export default function ProductScreen() {
   const [reportReason, setReportReason] = useState("");
   const [reportDetail, setReportDetail] = useState("");
   const [reportSent, setReportSent] = useState(false);
+  const [personalizedContent, setPersonalizedContent] = useState<string | null>(null);
+  const [loadingPersonalized, setLoadingPersonalized] = useState(false);
+  const isPersonalized = typeof window !== 'undefined' && localStorage.getItem('productViewMode') === 'personalized';
   const activeIndexRef = useRef(activeIndex);
   const scrollFrameRef = useRef(0);
   const cardsRef = useRef<Array<HTMLDivElement | null>>([]);
@@ -413,6 +416,18 @@ export default function ProductScreen() {
   }, [gtin, hasLookupTarget, id, lot]);
 
   const events: JourneyEvent[] = (batch?.journeyEvents ?? []) as JourneyEvent[];
+
+  // Fetch personalized view if enabled
+  useEffect(() => {
+    if (!isPersonalized || !product?.id) return;
+    const prompt = localStorage.getItem('productViewPrompt') ?? '';
+    if (!prompt) return;
+    setLoadingPersonalized(true);
+    getPersonalizedView(product.id, batch?.id, prompt)
+      .then(setPersonalizedContent)
+      .catch(() => setPersonalizedContent('Personalisierte Ansicht konnte nicht geladen werden.'))
+      .finally(() => setLoadingPersonalized(false));
+  }, [product?.id, batch?.id, isPersonalized]);
 
   // Preload AI descriptions for all journey events
   useEffect(() => {
@@ -969,6 +984,36 @@ export default function ProductScreen() {
           <div
             className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
           >
+            {isPersonalized ? (
+              <div className="px-4 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10">
+                    <svg className="h-3 w-3 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3l1.5 4.5H18l-3.5 2.5L16 14.5 12 12l-4 2.5L9.5 10 6 7.5h4.5z" />
+                    </svg>
+                  </div>
+                  <p className="text-xs font-semibold text-primary">Personalisierte Ansicht</p>
+                </div>
+                {loadingPersonalized ? (
+                  <div className="space-y-2.5 py-4">
+                    <div className="h-3.5 w-full rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-[90%] rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-4/5 rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-3/5 rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-[85%] rounded bg-muted animate-pulse" />
+                    <div className="h-3.5 w-2/3 rounded bg-muted animate-pulse" />
+                  </div>
+                ) : personalizedContent ? (
+                  <div className="text-[13px] leading-relaxed text-foreground/85 whitespace-pre-line">
+                    {personalizedContent}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground py-4">
+                    Konfiguriere deine personalisierte Ansicht in den Profileinstellungen.
+                  </p>
+                )}
+              </div>
+            ) : (
             <div className="px-4 space-y-4">
               {/* Origin */}
               {product.origin && (
@@ -1067,6 +1112,7 @@ export default function ProductScreen() {
                 </button>
               )}
             </div>
+            )}
           </div>
         </DrawerContent>
       </Drawer>

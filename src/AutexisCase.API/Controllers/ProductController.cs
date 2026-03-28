@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace AutexisCase.API.Controllers;
 
+public record PersonalizedViewRequest(string Prompt);
+
 [ApiController]
 [Route("api/[controller]")]
 public class ProductController(IMediator mediator) : ControllerBase
@@ -162,6 +164,16 @@ public class ProductController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new CreateReportCommand(productId, batchId, dto.Reason, dto.Details), cancellationToken);
         if (result.IsFailure) return NotFound(result.Error);
         return Ok(result.Value);
+    }
+
+    [HttpPost("{productId:guid}/personalized-view", Name = "GetPersonalizedProductView")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPersonalizedProductView(Guid productId, [FromQuery] Guid? batchId, [FromBody] PersonalizedViewRequest request, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetPersonalizedProductViewQuery(productId, batchId, request.Prompt), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(new { content = result.Value });
     }
 
     [HttpGet("route", Name = "GetPointToPointRoute")]

@@ -67,4 +67,31 @@ public class JourneyDescriptionService : IJourneyDescriptionService
         var response = await _chat.GetChatMessageContentAsync(history, cancellationToken: cancellationToken);
         return response.Content?.Trim() ?? "Keine Beschreibung verfügbar.";
     }
+
+    public async Task<string> GeneratePersonalizedViewAsync(string productContext, string userPrompt, CancellationToken cancellationToken = default)
+    {
+        var history = new ChatHistory();
+        history.AddSystemMessage("""
+            Du bist ein persönlicher Lebensmittel-Berater. Der Benutzer hat definiert, was ihn an Produkten interessiert.
+            Erstelle basierend auf den Produktdaten eine personalisierte Zusammenfassung auf Deutsch.
+
+            Schreibe nur das, was den Benutzer interessiert — nichts anderes.
+            Verwende einen freundlichen, informativen Ton. Formatiere mit kurzen Absätzen.
+            Wenn Daten fehlen, die der Benutzer sehen möchte, erwähne das kurz.
+            Antworte nur mit dem Text, ohne Markdown-Formatierung.
+            """);
+
+        history.AddUserMessage($"""
+            === PRODUKTDATEN ===
+            {productContext}
+
+            === WAS MICH INTERESSIERT ===
+            {userPrompt}
+
+            Erstelle meine personalisierte Produktübersicht.
+            """);
+
+        var response = await _chat.GetChatMessageContentAsync(history, cancellationToken: cancellationToken);
+        return response.Content?.Trim() ?? "Personalisierte Ansicht konnte nicht erstellt werden.";
+    }
 }

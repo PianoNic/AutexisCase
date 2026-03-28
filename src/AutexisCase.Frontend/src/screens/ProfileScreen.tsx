@@ -13,6 +13,7 @@ import {
   ChevronRight,
   AlertTriangle,
   Package,
+  Sparkles,
 } from 'lucide-react'
 import { scanApi } from '@/api/client'
 import type { ScanRecordDto } from '@/api/models/ScanRecordDto'
@@ -115,6 +116,11 @@ export default function ProfileScreen() {
 
           <Separator />
 
+          {/* Personalized product view settings */}
+          <PersonalizedViewSettings />
+
+          <Separator />
+
           {/* Recent Activity */}
           <ScanHistory scans={scans} navigate={navigate} />
 
@@ -175,6 +181,70 @@ function ScanHistory({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (p
             </button>
           )}
         </>
+      )}
+    </section>
+  )
+}
+
+function PersonalizedViewSettings() {
+  const [enabled, setEnabled] = useState(() => localStorage.getItem('productViewMode') === 'personalized')
+  const [prompt, setPrompt] = useState(() => localStorage.getItem('productViewPrompt') ?? '')
+  const [saved, setSaved] = useState(false)
+
+  const toggle = () => {
+    const next = !enabled
+    setEnabled(next)
+    localStorage.setItem('productViewMode', next ? 'personalized' : 'standard')
+  }
+
+  const save = () => {
+    localStorage.setItem('productViewPrompt', prompt)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex-1">Produktansicht</p>
+      </div>
+
+      <button
+        onClick={toggle}
+        className={`flex w-full items-center justify-between rounded-xl border p-3.5 text-left transition-colors ${
+          enabled ? 'border-primary bg-primary/5' : ''
+        }`}
+      >
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold">{enabled ? 'Personalisiert' : 'Standard'}</p>
+          <p className="text-[11px] text-muted-foreground">
+            {enabled ? 'KI zeigt dir, was dich interessiert' : 'Alle Produktinfos anzeigen'}
+          </p>
+        </div>
+        <div className={`h-6 w-11 rounded-full transition-colors ${enabled ? 'bg-primary' : 'bg-muted'}`}>
+          <div className={`h-5 w-5 rounded-full bg-white shadow mt-0.5 transition-transform ${enabled ? 'translate-x-5.5' : 'translate-x-0.5'}`} />
+        </div>
+      </button>
+
+      {enabled && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">Beschreibe, was dich an Produkten interessiert:</p>
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="z.B. Ich möchte wissen wie nachhaltig das Produkt ist, woher es kommt und ob es für Allergiker geeignet ist."
+            rows={3}
+            className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none resize-none focus:ring-1 focus:ring-primary"
+          />
+          <button
+            onClick={save}
+            disabled={!prompt.trim()}
+            className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+          >
+            {saved ? '✓ Gespeichert' : 'Speichern'}
+          </button>
+        </div>
       )}
     </section>
   )
