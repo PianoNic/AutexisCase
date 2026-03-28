@@ -66,55 +66,72 @@ export default function ScanScreen() {
       } catch { /* best effort */ }
     }
 
-    // Show confirmation briefly, then navigate
-    setTimeout(() => navigate(`/scan/lot?gtin=${gtin}`), 1200)
+    // Show confirmation briefly, then release camera and navigate
+    setTimeout(() => {
+      streamRef.current?.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+      navigate(`/scan/lot?gtin=${gtin}`)
+    }, 1200)
   }, [accessToken, navigate])
 
   const startCamera = useCallback(async (deviceId?: string) => {
     streamRef.current?.getTracks().forEach(t => t.stop())
 
-    const baseConstraints: MediaTrackConstraints = deviceId
-      ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-      : { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    const attemptCamera = async (retries = 3): Promise<boolean> => {
+      const constraintSets: any[] = deviceId
+        ? [{ deviceId: { exact: deviceId } }]
+        : [
+            { facingMode: { ideal: 'environment' } },
+            { facingMode: 'user' },
+            true,
+          ]
 
-    // Try with focusMode first (Samsung needs it), fall back without
-    const attempts: MediaTrackConstraints[] = [
-      { ...baseConstraints, ...({ focusMode: 'continuous' } as any) },
-      baseConstraints,
-      ...(deviceId ? [] : [{ facingMode: 'user' as const }]),
-    ]
-
-    for (const constraints of attempts) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false })
-        streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play()
-        }
-
-        // Try to enable autofocus via applyConstraints
-        const track = stream.getVideoTracks()[0]
-        if (track) {
-          const caps = track.getCapabilities?.() as any
-          const settings: any = {}
-          if (caps?.focusMode?.includes?.('continuous')) settings.focusMode = 'continuous'
-          if (caps?.exposureMode?.includes?.('continuous')) settings.exposureMode = 'continuous'
-          if (Object.keys(settings).length > 0) {
-            try { await track.applyConstraints({ advanced: [settings] }) } catch { /* unsupported */ }
+      for (const constraints of constraintSets) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: constraints, audio: false })
+          streamRef.current = stream
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream
+            await videoRef.current.play()
           }
-        }
 
-        setError(null)
-        const devices = await navigator.mediaDevices.enumerateDevices()
-        setCameras(devices.filter(d => d.kind === 'videoinput'))
-        return // success
-      } catch {
-        continue // try next
+          // Try to enable autofocus
+          const track = stream.getVideoTracks()[0]
+          if (track) {
+            const caps = track.getCapabilities?.() as any
+            const settings: any = {}
+            if (caps?.focusMode?.includes?.('continuous')) settings.focusMode = 'continuous'
+            if (caps?.exposureMode?.includes?.('continuous')) settings.exposureMode = 'continuous'
+            if (Object.keys(settings).length > 0) {
+              try { await track.applyConstraints({ advanced: [settings] }) } catch {}
+            }
+          }
+
+          setError(null)
+          // Enumerate after stream is stable
+          setTimeout(async () => {
+            try {
+              const devices = await navigator.mediaDevices.enumerateDevices()
+              setCameras(devices.filter(d => d.kind === 'videoinput'))
+            } catch {}
+          }, 500)
+          return true
+        } catch (e: any) {
+          // NotReadableError = camera busy, retry after delay
+          if (e.name === 'NotReadableError' && retries > 0) {
+            await new Promise(r => setTimeout(r, 1000))
+            return attemptCamera(retries - 1)
+          }
+          continue
+        }
       }
+      return false
     }
 
-    setError('Kamera-Zugriff verweigert')
+    const success = await attemptCamera()
+    if (!success) {
+      setError('Kamera-Zugriff verweigert')
+    }
   }, [])
 
   useEffect(() => {

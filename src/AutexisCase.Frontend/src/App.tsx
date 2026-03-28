@@ -9,6 +9,8 @@ import ScanScreen from './screens/ScanScreen'
 import LotCaptureScreen from './screens/LotCaptureScreen'
 import ProductScreen from './screens/ProductScreen'
 import ProfileScreen from './screens/ProfileScreen'
+import AdminScreen from './screens/AdminScreen'
+import AdminProductsScreen from './screens/AdminProductsScreen'
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
             <Route path="/product" element={<ProtectedRoute><ProductScreen /></ProtectedRoute>} />
             <Route path="/product/:id" element={<ProtectedRoute><ProductScreen /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfileScreen /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute><AdminScreen /></ProtectedRoute>} />
+            <Route path="/admin/products" element={<ProtectedRoute><AdminProductsScreen /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           <BottomNav />

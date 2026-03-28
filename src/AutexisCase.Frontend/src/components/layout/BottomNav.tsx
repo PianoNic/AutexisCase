@@ -13,7 +13,8 @@ export function BottomNav() {
     location.pathname === '/login' ||
     location.pathname === '/callback' ||
     location.pathname.startsWith('/product') ||
-    location.pathname.startsWith('/scan')
+    location.pathname.startsWith('/scan') ||
+    location.pathname.startsWith('/admin')
   ) return null
 
   return (

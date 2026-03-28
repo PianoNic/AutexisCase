@@ -23,10 +23,16 @@ export default function LotCaptureScreen() {
 
     let cancelled = false
     const startCam = async () => {
+      // Brief delay to let previous camera stream fully release
+      await new Promise(r => setTimeout(r, 300))
+      if (cancelled) return
+
       const attempts = [
         { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 }, focusMode: 'continuous' } as any,
         { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+        { facingMode: 'environment' },
         { facingMode: 'user' },
+        true as any,
       ]
 
       for (const constraints of attempts) {
