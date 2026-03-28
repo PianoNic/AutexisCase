@@ -145,10 +145,25 @@ export default function ProductScreen() {
   useEffect(() => {
     if (events.length === 0 || !mapRef.current) return
     const target = events[activeIndex] ?? events[events.length - 1]
+    const prev = activeIndex > 0 ? events[activeIndex - 1] : undefined
+    const next = activeIndex < events.length - 1 ? events[activeIndex + 1] : undefined
+    const refs = [prev, next].filter(Boolean) as JourneyEventDto[]
+    let zoom = 8
+    if (refs.length > 0) {
+      const span = Math.max(...refs.map(r => Math.max(Math.abs((r.latitude ?? 0) - (target.latitude ?? 0)), Math.abs((r.longitude ?? 0) - (target.longitude ?? 0)))))
+      if (span <= 0.2) zoom = 12
+      else if (span <= 0.75) zoom = 11
+      else if (span <= 2) zoom = 9.5
+      else if (span <= 6) zoom = 7.5
+      else if (span <= 16) zoom = 6
+      else zoom = 4.5
+    }
     mapRef.current.easeTo({
       center: [target.longitude ?? 0, target.latitude ?? 0],
-      zoom: 4,
-      duration: 600,
+      zoom,
+      pitch: 45,
+      duration: 1200,
+      easing: (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
     })
   }, [activeIndex, events])
 
@@ -172,12 +187,21 @@ export default function ProductScreen() {
   const onCardScroll = useCallback(() => {
     const el = cardScrollRef.current
     if (!el || events.length === 0) return
-    const scrollLeft = el.scrollLeft
-    const cardWidth = el.firstElementChild?.getBoundingClientRect().width ?? 160
-    const idx = Math.round(scrollLeft / (cardWidth + 8)) // 8 = gap
-    if (idx >= 0 && idx < events.length && idx !== activeIndex) {
-      setActiveIndex(idx)
+    const containerRect = el.getBoundingClientRect()
+    const center = containerRect.left + containerRect.width / 2
+    let closestIdx = 0
+    let closestDist = Infinity
+    // Skip first and last children (spacers)
+    for (let i = 1; i < el.children.length - 1; i++) {
+      const child = el.children[i]
+      const rect = child.getBoundingClientRect()
+      const dist = Math.abs(rect.left + rect.width / 2 - center)
+      if (dist < closestDist) {
+        closestDist = dist
+        closestIdx = i - 1
+      }
     }
+    if (closestIdx !== activeIndex) setActiveIndex(closestIdx)
   }, [events, activeIndex])
 
   if (loading) {
@@ -206,12 +230,19 @@ export default function ProductScreen() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-background">
       {/* Full-screen MapLibre map background */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" data-vaul-no-drag>
         <Map
           ref={mapRef}
+          reuseMaps
           mapStyle={MAP_STYLE_URL}
           style={{ width: '100%', height: '100%' }}
-          initialViewState={{ longitude: events[0]?.longitude ?? 10, latitude: events[0]?.latitude ?? 47, zoom: 4 }}
+          initialViewState={{
+            longitude: events[0]?.longitude ?? 8.3,
+            latitude: events[0]?.latitude ?? 47.2,
+            zoom: 3.4,
+            pitch: 35,
+            bearing: 0,
+          }}
           onLoad={onMapLoad}
           attributionControl={false}
         >
@@ -286,16 +317,18 @@ export default function ProductScreen() {
         noBodyStyles
         snapToSequentialPoint
       >
-        <DrawerContent showOverlay={false} className="flex flex-col overflow-hidden h-full !max-h-[calc(100%-6rem)]">
+        <DrawerContent showOverlay={false} className="flex flex-col h-full !max-h-[calc(100%-6rem)] before:hidden">
           {/* Journey step cards above the drawer handle */}
           {events.length > 0 && (
-            <div className="absolute inset-x-0 bottom-full pb-2 px-3 z-10">
+            <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2 z-10">
               <div
                 ref={cardScrollRef}
                 onScroll={onCardScroll}
-                className="flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-none"
+                onPointerDownCapture={(e) => e.stopPropagation()}
+                className="pointer-events-auto flex gap-2 overflow-x-auto snap-x snap-mandatory px-4 touch-pan-x"
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
+                <div className="w-[35%] shrink-0" />
                 {events.map((event, i) => {
                   const isActive = i === activeIndex
                   const dateStr = event.timestamp
@@ -306,7 +339,7 @@ export default function ProductScreen() {
                       key={event.id}
                       onClick={() => {
                         setActiveIndex(i)
-                        cardScrollRef.current?.children[i]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+                        cardScrollRef.current?.children[i + 1]?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
                       }}
                       className={`snap-center shrink-0 rounded-xl border px-3 py-2 text-left transition-all ${
                         isActive
@@ -316,13 +349,14 @@ export default function ProductScreen() {
                       style={{ minWidth: 140, maxWidth: 170 }}
                     >
                       <p className={`text-[11px] font-semibold truncate ${isActive ? 'text-emerald-700' : 'text-foreground'}`}>
-                        {event.eventType ?? `Schritt ${i + 1}`}
+                        {event.step ?? `Schritt ${i + 1}`}
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate">{event.location}</p>
                       {dateStr && <p className="text-[9px] text-muted-foreground mt-0.5">{dateStr}</p>}
                     </button>
                   )
                 })}
+                <div className="w-[35%] shrink-0" />
               </div>
             </div>
           )}
