@@ -959,7 +959,10 @@ export default function ProductScreen() {
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
             {batch?.lotNumber && (
-              <p className="text-[10px] font-mono text-muted-foreground">LOT {batch.lotNumber}</p>
+              <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-0.5 w-fit">
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
+                <span className="text-[11px] font-mono text-foreground">{batch.lotNumber}</span>
+              </span>
             )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (

@@ -15,7 +15,7 @@ export function MobileOnlyOverlay() {
       </p>
       <div className="rounded-2xl border bg-white p-4 shadow-sm">
         <QRCodeSVG
-          value={window.location.href}
+          value={window.location.origin}
           size={160}
           bgColor="#ffffff"
           fgColor="#0f172a"
@@ -23,7 +23,7 @@ export function MobileOnlyOverlay() {
         />
       </div>
       <p className="mt-4 text-xs text-muted-foreground font-mono break-all max-w-xs">
-        {window.location.href}
+        {window.location.origin}
       </p>
     </div>
   );
