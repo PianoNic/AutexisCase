@@ -307,6 +307,8 @@ export default function ProductScreen() {
   const isScrollSnapping = useRef(false);
   const clickedRef = useRef(false);
   const initializedRef = useRef(false);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const isUserInteractingRef = useRef(false);
   const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
@@ -724,15 +726,30 @@ export default function ProductScreen() {
             >
               <div
                 ref={scrollRef}
-                onScroll={compactJourney ? undefined : handleScroll}
-                onScrollEnd={compactJourney ? undefined : handleScrollEnd}
                 onPointerDownCapture={(event) => event.stopPropagation()}
+                onTouchStart={(e) => {
+                  touchStartX.current = e.touches[0].clientX;
+                  touchStartY.current = e.touches[0].clientY;
+                }}
+                onTouchEnd={(e) => {
+                  if (compactJourney) return;
+                  const dx = e.changedTouches[0].clientX - touchStartX.current;
+                  const dy = e.changedTouches[0].clientY - touchStartY.current;
+                  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+                    const next = dx < 0
+                      ? Math.min(activeIndex + 1, events.length - 1)
+                      : Math.max(activeIndex - 1, 0);
+                    if (next !== activeIndex) {
+                      clickedRef.current = true;
+                      setActiveIndex(next);
+                    }
+                  }
+                }}
                 className={`pointer-events-auto flex items-center gap-0 overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                   compactJourney
                     ? "overflow-x-hidden"
-                    : "overflow-x-auto snap-x snap-mandatory touch-pan-x"
+                    : "overflow-x-hidden"
                 }`}
-                style={{ WebkitOverflowScrolling: 'touch' }}
               >
                 <div className="w-[40%] shrink-0" />
                 {events.map((event, index) => (
@@ -775,7 +792,7 @@ export default function ProductScreen() {
                           setActiveIndex(index);
                         }
                       }}
-                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : "snap-center [scroll-snap-stop:always]"}`}
+                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : ""}`}
                     >
                       <Card
                         size="sm"
