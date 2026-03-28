@@ -24,6 +24,7 @@ models/Co2BreakdownItemDto.ts
 models/ColdChainAnomalyDto.ts
 models/CoordinateDto.ts
 models/CreateExampleCommand.ts
+models/CreateReportDto.ts
 models/ExampleDto.ts
 models/JourneyCoordinatesDto.ts
 models/JourneyEventDto.ts
@@ -35,6 +36,7 @@ models/PriceStepDto.ts
 models/ProblemDetails.ts
 models/ProductAlternativesDto.ts
 models/ProductDto.ts
+models/ProductReportDto.ts
 models/ProductStatus.ts
 models/ProductSummaryDto.ts
 models/QualityDataPointDto.ts

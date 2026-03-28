@@ -1008,7 +1008,15 @@ export default function ProductScreen() {
               className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
             />
             <button
-              onClick={() => { setReportSent(true); setReportStep("closed"); }}
+              onClick={() => {
+                productApi.createReport({
+                  productId: product.id!,
+                  batchId: batch?.id,
+                  createReportDto: { reason: reportReason, details: reportDetail || undefined },
+                }).catch(() => {});
+                setReportSent(true);
+                setReportStep("closed");
+              }}
               disabled={reportReason === "Sonstiges" && !reportDetail.trim()}
               className="w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white disabled:opacity-30"
             >
