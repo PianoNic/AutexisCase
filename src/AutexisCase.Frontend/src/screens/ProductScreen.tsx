@@ -723,7 +723,7 @@ export default function ProductScreen() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-background to-transparent" />
 
-        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pt-12">
+        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-[51] flex items-center justify-between px-4 pt-12">
           <Button
             variant="outline"
             size="icon"
@@ -962,7 +962,7 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 1: pick reason */}
       {reportStep === "reason" && (
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
           <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
@@ -991,7 +991,7 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 2: add details */}
       {reportStep === "detail" && (
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
           <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
