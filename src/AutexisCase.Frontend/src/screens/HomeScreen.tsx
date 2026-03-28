@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ScanLine, Award } from 'lucide-react'
 import { scanApi } from '@/api/client'
@@ -82,26 +82,58 @@ export default function HomeScreen() {
         ) : scans.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-8">Noch keine Scans. Scanne ein Produkt!</p>
         ) : (
-          <div className="overflow-hidden rounded-xl border divide-y">
-            {scans.map((s) => (
-              <button
-                key={s.id}
-                className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
-                onClick={() => navigate(`/product?id=${s.productId}`)}
-              >
-                {s.productImageUrl && (
-                  <img src={s.productImageUrl} alt={s.productName ?? ''} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{s.productName}</p>
-                  <p className="text-[10px] text-muted-foreground">{s.productBrand}</p>
-                </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              </button>
-            ))}
-          </div>
+          <ScanList scans={scans} navigate={navigate} />
         )}
       </section>
+    </div>
+  )
+}
+
+function ScanList({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (path: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [visibleCount, setVisibleCount] = useState(scans.length)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+
+    const measure = () => {
+      const containerHeight = el.parentElement?.clientHeight ?? el.clientHeight
+      const items = el.children
+      let count = 0
+      let totalHeight = 2 // border
+      for (let i = 0; i < items.length; i++) {
+        totalHeight += items[i].clientHeight + (i > 0 ? 1 : 0) // 1px divider
+        if (totalHeight > containerHeight) break
+        count++
+      }
+      setVisibleCount(Math.max(1, count))
+    }
+
+    // Measure after render
+    requestAnimationFrame(measure)
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [scans])
+
+  return (
+    <div className="rounded-xl border divide-y" ref={containerRef}>
+      {scans.slice(0, visibleCount).map((s) => (
+        <button
+          key={s.id}
+          className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
+          onClick={() => navigate(`/product?id=${s.productId}`)}
+        >
+          {s.productImageUrl && (
+            <img src={s.productImageUrl} alt={s.productName ?? ''} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium truncate">{s.productName}</p>
+            <p className="text-[10px] text-muted-foreground">{s.productBrand}</p>
+          </div>
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        </button>
+      ))}
     </div>
   )
 }
