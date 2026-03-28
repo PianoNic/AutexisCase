@@ -1073,9 +1073,9 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 1: pick reason */}
       {reportStep === "reason" && (
-        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60]" data-vaul-no-drag onPointerDownCapture={(e) => e.stopPropagation()} onTouchStartCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4" data-vaul-no-drag>
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
             <div className="text-center">
               <Flag className="h-6 w-6 text-red-500 mx-auto mb-1" />
@@ -1102,9 +1102,9 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 2: add details */}
       {reportStep === "detail" && (
-        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[60]" data-vaul-no-drag onPointerDownCapture={(e) => e.stopPropagation()} onTouchStartCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4" data-vaul-no-drag>
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
             <div className="text-center">
               <p className="text-base font-semibold">{reportReason}</p>
@@ -1116,7 +1116,8 @@ export default function ProductScreen() {
               placeholder="Was ist passiert?"
               rows={4}
               autoFocus
-              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
+              data-vaul-no-drag
+              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400 touch-auto"
             />
             <button
               onClick={() => {
