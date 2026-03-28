@@ -94,6 +94,16 @@ public class ProductController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpGet("journey/{eventId:guid}/description", Name = "GetJourneyEventDescription")]
+    [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetJourneyEventDescription(Guid eventId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetJourneyEventDescriptionQuery(eventId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(new { description = result.Value });
+    }
+
     [HttpPost("{productId:guid}/chat", Name = "AskProduct")]
     [ProducesResponseType(typeof(ChatResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

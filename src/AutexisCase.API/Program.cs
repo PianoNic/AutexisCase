@@ -28,6 +28,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IUserSyncService, UserSyncService>();
 builder.Services.AddSingleton<IOcrService, OcrService>();
+builder.Services.AddSingleton<IJourneyDescriptionService, JourneyDescriptionService>();
 builder.Services.AddHttpClient<OpenFoodFactsService>();
 builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<OpenFoodFactsService>());
 builder.Services.AddHttpClient<RoutingService>();

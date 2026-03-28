@@ -8,7 +8,7 @@ namespace AutexisCase.Infrastructure.Services;
 
 public class RoutingService(HttpClient httpClient, IConfiguration configuration, IAppDbContext dbContext) : IRoutingService
 {
-    private readonly string _apiKey = configuration["OpenRouteService:ApiKey"] ?? throw new InvalidOperationException("OpenRouteService:ApiKey not configured");
+    private readonly string? _apiKey = configuration["OpenRouteService:ApiKey"];
 
     public async Task<List<double[]>> GetRouteAsync(double fromLat, double fromLon, double toLat, double toLon, string profile = "driving-hgv", CancellationToken cancellationToken = default)
     {
@@ -51,34 +51,49 @@ public class RoutingService(HttpClient httpClient, IConfiguration configuration,
 
     private async Task<List<double[]>> FetchRouteFromOrs(double fromLat, double fromLon, double toLat, double toLon, string profile, CancellationToken cancellationToken)
     {
+        // Try ORS if key available, otherwise use free OSRM
+        if (!string.IsNullOrEmpty(_apiKey))
+        {
+            try
+            {
+                var url = $"https://api.openrouteservice.org/v2/directions/{profile}?api_key={_apiKey}&start={fromLon},{fromLat}&end={toLon},{toLat}";
+                var response = await httpClient.GetAsync(url, cancellationToken);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                    var doc = JsonDocument.Parse(json);
+                    var coordinates = doc.RootElement.GetProperty("features")[0].GetProperty("geometry").GetProperty("coordinates");
+                    var points = new List<double[]>();
+                    foreach (var coord in coordinates.EnumerateArray())
+                        points.Add([coord[1].GetDouble(), coord[0].GetDouble()]);
+                    return points;
+                }
+            }
+            catch { /* fall through to OSRM */ }
+        }
+
+        // Fallback: OSRM (free, no key needed)
         try
         {
-            var url = $"https://api.openrouteservice.org/v2/directions/{profile}?api_key={_apiKey}&start={fromLon},{fromLat}&end={toLon},{toLat}";
+            var osrmProfile = profile.Contains("foot") ? "foot" : profile.Contains("cycling") ? "bike" : "car";
+            var url = $"https://router.project-osrm.org/route/v1/{osrmProfile}/{fromLon},{fromLat};{toLon},{toLat}?overview=full&geometries=geojson";
             var response = await httpClient.GetAsync(url, cancellationToken);
 
-            if (!response.IsSuccessStatusCode)
-                return GenerateStraightLine(fromLat, fromLon, toLat, toLon);
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var doc = JsonDocument.Parse(json);
-
-            var coordinates = doc.RootElement
-                .GetProperty("features")[0]
-                .GetProperty("geometry")
-                .GetProperty("coordinates");
-
-            var points = new List<double[]>();
-            foreach (var coord in coordinates.EnumerateArray())
+            if (response.IsSuccessStatusCode)
             {
-                points.Add([coord[1].GetDouble(), coord[0].GetDouble()]);
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var doc = JsonDocument.Parse(json);
+                var coordinates = doc.RootElement.GetProperty("routes")[0].GetProperty("geometry").GetProperty("coordinates");
+                var points = new List<double[]>();
+                foreach (var coord in coordinates.EnumerateArray())
+                    points.Add([coord[1].GetDouble(), coord[0].GetDouble()]);
+                return points;
             }
+        }
+        catch { /* fall through to straight line */ }
 
-            return points;
-        }
-        catch
-        {
-            return GenerateStraightLine(fromLat, fromLon, toLat, toLon);
-        }
+        return GenerateStraightLine(fromLat, fromLon, toLat, toLon);
     }
 
     private static bool IsCrossOcean(double lat1, double lon1, double lat2, double lon2)

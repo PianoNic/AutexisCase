@@ -16,6 +16,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import maplibregl from "maplibre-gl";
 import useEmblaCarousel from "embla-carousel-react";
+import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import { ArrowRight, Thermometer, ShieldCheck, Leaf, TreePine, Award, Sprout, Flag } from "lucide-react";
 import {
@@ -29,7 +30,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { productApi } from "@/api/client";
+import { productApi, getJourneyEventDescription } from "@/api/client";
 import type { ProductDto } from "@/api/models/ProductDto";
 import type { BatchDto } from "@/api/models/BatchDto";
 import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
@@ -304,6 +305,8 @@ export default function ProductScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
+  const [expandedCard, setExpandedCard] = useState(false);
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
   const [reportReason, setReportReason] = useState("");
   const [reportDetail, setReportDetail] = useState("");
@@ -315,7 +318,7 @@ export default function ProductScreen() {
   const isScrollSnapping = useRef(false);
   const clickedRef = useRef(false);
   const initializedRef = useRef(false);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', containScroll: false, dragFree: false });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', containScroll: false, dragFree: false }, [WheelGesturesPlugin({ forceWheelAxis: 'x' })]);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const isUserInteractingRef = useRef(false);
   const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
@@ -410,6 +413,19 @@ export default function ProductScreen() {
   }, [gtin, hasLookupTarget, id, lot]);
 
   const events: JourneyEvent[] = (batch?.journeyEvents ?? []) as JourneyEvent[];
+
+  // Preload AI descriptions for all journey events
+  useEffect(() => {
+    if (events.length === 0) return;
+    events.forEach((event) => {
+      if (event.id && !descriptions[event.id]) {
+        getJourneyEventDescription(event.id)
+          .then((desc) => setDescriptions((prev) => ({ ...prev, [event.id]: desc })))
+          .catch(() => {});
+      }
+    });
+  }, [events.length, batch?.id]);
+
   const routeLegs = events.slice(0, -1).map((event, index) => {
     const nextEvent = events[index + 1];
     const realRoute = routeSegments[String(index)];
@@ -449,12 +465,18 @@ export default function ProductScreen() {
 
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
 
-    const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
-    const visibleCenterFraction = (1 - drawerFraction) / 2;
-    const offsetFraction = 0.5 - visibleCenterFraction;
-    const degreesPerPixel = 360 / (512 * Math.pow(2, targetCamera.zoom));
-    const pitchFactor = 1 / Math.cos((48 * Math.PI) / 180);
-    targetCamera.latitude -= offsetFraction * 700 * degreesPerPixel * pitchFactor;
+    // Center the marker in the visible gap between top bar and drawer+cards
+    // Screen: [top bar ~60px] [visible area] [cards ~80-200px] [drawer]
+    // We want the marker at the vertical center of the visible area
+    const h = window.innerHeight;
+    const topPx = 60; // top bar height
+    const drawerFrac = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
+    const drawerPx = h * drawerFrac;
+    const cardsPx = expandedCard ? 200 : 80;
+    const coveredBottom = drawerPx + cardsPx;
+    const visibleCenter = topPx + (h - topPx - coveredBottom) / 2;
+    // Map center is at h/2. We need to shift by (h/2 - visibleCenter) pixels
+    const pixelShift = h / 2 - visibleCenter;
 
     map.easeTo({
       center: [targetCamera.longitude, targetCamera.latitude],
@@ -462,10 +484,11 @@ export default function ProductScreen() {
       bearing: targetCamera.bearing,
       pitch: targetCamera.pitch,
       duration: 1500,
+      padding: { top: 0, bottom: pixelShift * 2, left: 0, right: 0 },
       easing: (t) =>
         t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
     });
-  }, [activeIndex, events, mapLoaded]);
+  }, [activeIndex, events, mapLoaded, snap, expandedCard]);
 
   const handleInteractionStart = useCallback(() => {
     isUserInteractingRef.current = true;
@@ -624,13 +647,14 @@ export default function ProductScreen() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-background to-background">
-        <div className="absolute inset-0" data-vaul-no-drag>
+        <div className="absolute inset-0 touch-auto" data-vaul-no-drag>
           <Map
             reuseMaps
             attributionControl={false}
             mapStyle={MAP_STYLE_URL}
             initialViewState={DEFAULT_CAMERA}
             onLoad={handleMapLoad}
+            onClick={() => { if (expandedCard) setExpandedCard(false); }}
             onDragStart={handleInteractionStart}
             onDragEnd={handleInteractionEnd}
             onZoomStart={handleInteractionStart}
@@ -758,7 +782,7 @@ export default function ProductScreen() {
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
       >
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
+        <DrawerContent showOverlay={false} className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
           {events.length > 0 && (
             <div
               className="pointer-events-none absolute inset-x-0 bottom-full pb-2 transition-all duration-300"
@@ -775,25 +799,42 @@ export default function ProductScreen() {
                       key={event.id}
                       ref={(element) => { cardsRef.current[index] = element; }}
                       onClick={() => {
-                        clickedRef.current = true;
-                        setActiveIndex(index);
+                        if (compactJourney) {
+                          clickedRef.current = true;
+                          setActiveIndex(index);
+                          return;
+                        }
+                        if (index !== activeIndex) {
+                          clickedRef.current = true;
+                          setActiveIndex(index);
+                          return;
+                        }
+                        setExpandedCard(!expandedCard);
                       }}
                       className="shrink-0 cursor-pointer"
-                      style={{ flex: compactJourney ? '0 0 auto' : '0 0 280px', transition: 'flex-basis 300ms ease' }}
+                      style={{
+                        flex: compactJourney
+                          ? '0 0 auto'
+                          : expandedCard
+                            ? '0 0 85vw'
+                            : '0 0 280px',
+                        transition: 'flex-basis 400ms cubic-bezier(0.4, 0, 0.2, 1)',
+                      }}
                     >
                       <Card
                         size="sm"
-                        className={`bg-background/96 text-left shadow-sm transition-all duration-200 h-full ${
+                        className={`bg-background/96 text-left shadow-sm transition-all duration-300 h-full ${
                           index === activeIndex
                             ? "border-primary ring-2 ring-primary/15"
                             : "border-border"
                         }`}
                       >
                         <CardContent
-                          className="transition-all duration-300 overflow-hidden"
+                          className="transition-all duration-400 overflow-hidden"
                           style={{
-                            padding: compactJourney ? "4px 10px" : "16px",
-                            maxHeight: compactJourney ? "32px" : "200px",
+                            padding: compactJourney ? "4px 10px" : expandedCard ? "16px" : "16px",
+                            maxHeight: compactJourney ? "32px" : expandedCard ? "600px" : "100px",
+                            transition: "max-height 400ms cubic-bezier(0.4, 0, 0.2, 1), padding 300ms ease",
                           }}
                         >
                           {compactJourney ? (
@@ -806,7 +847,8 @@ export default function ProductScreen() {
                               </span>
                             </div>
                           ) : (
-                            <div className="space-y-3">
+                            <div className="space-y-2">
+                              {/* Header */}
                               <div className="flex items-center gap-2.5">
                                 <div
                                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
@@ -823,11 +865,65 @@ export default function ProductScreen() {
                                 <span>{formatEventDate(event.timestamp)}</span>
                               </div>
 
-                              {event.details && (
-                                <p className="text-[13px] leading-snug text-foreground/75">
-                                  {event.details}
-                                </p>
-                              )}
+                              {/* Expanded detail content */}
+                              {expandedCard && (() => {
+                                const prevEv = index > 0 ? events[index - 1] : null;
+                                const hrs = prevEv
+                                  ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEv.timestamp).getTime()) / 3600000)
+                                  : null;
+                                const desc = descriptions[event.id];
+
+                                return (
+                                  <div className="space-y-3 pt-2 border-t border-border/50">
+                                    {/* Stats grid */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="rounded-lg bg-muted/50 px-2.5 py-2">
+                                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Datum</p>
+                                        <p className="text-xs font-semibold mt-0.5">{new Date(event.timestamp).toLocaleDateString("de-CH", { day: "numeric", month: "long", year: "numeric" })}</p>
+                                      </div>
+                                      {event.temperature != null && (
+                                        <div className="rounded-lg bg-blue-50 border border-blue-100 px-2.5 py-2">
+                                          <p className="text-[9px] text-blue-600 uppercase tracking-wider">Temperatur</p>
+                                          <p className="text-xs font-semibold text-blue-700 mt-0.5">{event.temperature}°C</p>
+                                        </div>
+                                      )}
+                                      {hrs != null && hrs > 0 && (
+                                        <div className="rounded-lg bg-muted/50 px-2.5 py-2">
+                                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Transportdauer</p>
+                                          <p className="text-xs font-semibold mt-0.5">{hrs < 24 ? `${hrs} Stunden` : `${Math.round(hrs / 24)} Tage`}</p>
+                                        </div>
+                                      )}
+                                      {event.co2Kg != null && (
+                                        <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-2">
+                                          <p className="text-[9px] text-emerald-600 uppercase tracking-wider">CO₂-Ausstoss</p>
+                                          <p className="text-xs font-semibold text-emerald-700 mt-0.5">{event.co2Kg} kg</p>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* AI insight */}
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Einblick</p>
+                                      {desc ? (
+                                        <p className="text-[12px] leading-[1.6] text-foreground/85">{desc}</p>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-[90%] rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-4/5 rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-3/5 rounded bg-muted animate-pulse" />
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Location detail */}
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                                      <span>{event.location}</span>
+                                      <span className="font-mono">{event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </CardContent>
