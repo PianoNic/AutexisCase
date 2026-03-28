@@ -130,7 +130,7 @@ export default function ProfileScreen() {
 
 function ScanHistory({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (path: string) => void }) {
   const [showAll, setShowAll] = useState(false)
-  const visible = showAll ? scans : scans.slice(0, 5)
+  const visible = showAll ? scans : scans.slice(0, 3)
 
   return (
     <section>
@@ -180,7 +180,7 @@ function ScanHistory({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (p
               )
             })}
           </div>
-          {scans.length > 5 && !showAll && (
+          {scans.length > 3 && !showAll && (
             <button
               onClick={() => setShowAll(true)}
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-sm font-medium text-primary active:bg-accent transition-colors"
