@@ -317,7 +317,7 @@ export default function ProductScreen() {
         noBodyStyles
         snapToSequentialPoint
       >
-        <DrawerContent showOverlay={false} className="flex flex-col h-full !max-h-[calc(100%-6rem)] before:hidden">
+        <DrawerContent showOverlay={false} className="flex flex-col !max-h-[calc(100%-6rem)] min-h-[100dvh] bg-popover before:hidden data-[vaul-drawer-direction=bottom]:mt-0">
           {/* Journey step cards above the drawer handle */}
           {events.length > 0 && (
             <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2 z-10">
