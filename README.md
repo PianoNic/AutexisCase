@@ -4,7 +4,7 @@
 
 > **{baden: hackt} 2026** — Team Autexis
 
-<video src="https://github.com/PianoNic/AutexisCase/raw/main/docs/demo.mp4" controls width="100%"></video>
+<h3 align="center"><a href="docs/demo.mp4">Demo-Video ansehen</a></h3>
 
 | Login | Produkt-Journey | Vendor Dashboard |
 |:---:|:---:|:---:|
