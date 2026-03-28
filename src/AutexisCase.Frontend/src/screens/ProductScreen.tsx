@@ -774,7 +774,12 @@ export default function ProductScreen() {
                       ref={(element) => { cardsRef.current[index] = element; }}
                       onClick={() => {
                         clickedRef.current = true;
-                        setActiveIndex(index);
+                        if (index === activeIndex && !compactJourney) {
+                          // Toggle between mid and full drawer state
+                          setSnap(isFullyOpen ? SNAP_POINTS[1] : SNAP_POINTS[SNAP_POINTS.length - 1]);
+                        } else {
+                          setActiveIndex(index);
+                        }
                       }}
                       className="shrink-0 cursor-pointer"
                       style={{
