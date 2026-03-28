@@ -856,9 +856,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className={`flex-1 overscroll-y-contain pb-[max(4rem,env(safe-area-inset-bottom))] ${
-              currentSnap >= SNAP_POINTS[1] ? "overflow-y-auto" : "overflow-hidden"
-            }`}
+            className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
           >
             <div className="px-4 space-y-4">
               {/* Origin */}
