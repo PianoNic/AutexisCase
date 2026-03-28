@@ -38,7 +38,7 @@ import { AlternativesCard } from "@/components/product/AlternativesCard";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
-const SNAP_POINTS = [0.08, 0.55, 0.88];
+const SNAP_POINTS = [0.08, 0.55, 0.87];
 type MapPoint = [number, number];
 type MapCamera = {
   longitude: number;
@@ -716,7 +716,7 @@ export default function ProductScreen() {
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
       >
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
           {events.length > 0 && !isFullyOpen && (
             <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
               <div
