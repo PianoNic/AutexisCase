@@ -635,11 +635,26 @@ export default function ProductScreen() {
 
   if (!product) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-sm text-muted-foreground">Produkt nicht gefunden.</p>
-        <Button variant="outline" onClick={() => navigate("/")}>
-          Zurück
-        </Button>
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-8">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
+          <svg className="h-7 w-7 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="font-semibold">Produkt nicht gefunden</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Dieses Produkt ist leider nicht in unserer Datenbank.
+          </p>
+        </div>
+        <div className="flex gap-2 w-full max-w-xs">
+          <Button variant="outline" className="flex-1" onClick={() => navigate("/")}>
+            Startseite
+          </Button>
+          <Button className="flex-1" onClick={() => navigate("/scan")}>
+            Erneut scannen
+          </Button>
+        </div>
       </div>
     );
   }

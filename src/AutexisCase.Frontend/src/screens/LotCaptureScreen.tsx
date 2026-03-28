@@ -105,11 +105,11 @@ export default function LotCaptureScreen() {
             return
           }
         }
-        setError('LOT nicht erkannt — erneut versuchen')
+        setError('Chargennummer nicht erkannt. Versuche es erneut oder gib sie manuell ein.')
         setCapturing(false)
         resumeCamera()
       } catch {
-        setError('Verarbeitung fehlgeschlagen')
+        setError('Verbindungsfehler — bitte erneut versuchen')
         setCapturing(false)
         resumeCamera()
       }
