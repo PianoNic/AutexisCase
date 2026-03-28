@@ -129,23 +129,15 @@ export default function ProfileScreen() {
 }
 
 function ScanHistory({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (path: string) => void }) {
-  const [showAll, setShowAll] = useState(false)
-  const visible = showAll ? scans : scans.slice(0, 3)
-
   return (
     <section>
-      <div className="flex items-center gap-2 mb-2">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex-1">
-          Letzte Aktivität
-        </p>
-        <span className="text-xs text-muted-foreground">{scans.length} Einträge</span>
-      </div>
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Letzte Aktivität</p>
       {scans.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-4">Noch keine Scans.</p>
       ) : (
         <>
           <div className="rounded-xl border divide-y">
-            {visible.map((s) => {
+            {scans.slice(0, 3).map((s) => {
               const status = String(s.productStatus ?? 'Ok')
               const hasIssue = status === 'Warning' || status === 'Recall' || status === '1' || status === '2'
               return (
@@ -163,26 +155,17 @@ function ScanHistory({ scans, navigate }: { scans: ScanRecordDto[]; navigate: (p
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{s.productName}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-[10px] text-muted-foreground">{s.productBrand}</p>
-                      {s.scannedAt && (
-                        <p className="text-[10px] text-muted-foreground">
-                          {new Date(s.scannedAt).toLocaleDateString('de-DE')}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-[10px] text-muted-foreground">{s.productBrand}</p>
                   </div>
-                  {hasIssue && (
-                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
-                  )}
+                  {hasIssue && <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
                   <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 </button>
               )
             })}
           </div>
-          {scans.length > 3 && !showAll && (
+          {scans.length > 3 && (
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => navigate('/history')}
               className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-sm font-medium text-primary active:bg-accent transition-colors"
             >
               Alle {scans.length} Einträge anzeigen
