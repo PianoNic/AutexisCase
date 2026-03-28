@@ -4,6 +4,8 @@
 
 > **{baden: hackt} 2026** — Team Autexis
 
+https://github.com/PianoNic/AutexisCase/raw/main/docs/demo.mp4
+
 | Login | Produkt-Journey | Vendor Dashboard |
 |:---:|:---:|:---:|
 | ![Login](docs/screenshots/01-login.png) | ![Produkt](docs/screenshots/04-product-map.png) | ![Vendor](docs/screenshots/06-vendor-dashboard.png) |
