@@ -1,0 +1,110 @@
+{
+  "realm": "autexiscase",
+  "displayName": "Track my Food",
+  "displayNameHtml": "<div style='text-align:center'><h1 style='color:#16a34a;font-size:24px;margin:0'>Track my Food</h1><p style='color:#666;font-size:13px;margin:4px 0 0'>Scanne. Verfolge. Vertraue.</p></div>",
+  "enabled": true,
+  "sslRequired": "none",
+  "loginTheme": "keycloak",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "roles": {
+    "realm": [
+      { "name": "vendor", "description": "Vendor portal access" },
+      { "name": "user", "description": "Regular user" }
+    ]
+  },
+  "groups": [
+    {
+      "name": "vendor",
+      "realmRoles": ["vendor"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "autexiscase-app",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "https://*.devtunnels.ms/*"
+      ],
+      "webOrigins": ["*"],
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "full.path": "false",
+            "claim.name": "groups",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "vendor-demo",
+      "email": "vendor@demo.ch",
+      "firstName": "Anna",
+      "lastName": "Müller",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["vendor", "user"],
+      "groups": ["vendor"]
+    },
+    {
+      "username": "user-demo",
+      "email": "user@demo.ch",
+      "firstName": "Max",
+      "lastName": "Berger",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["user"],
+      "groups": []
+    }
+  ]
+}

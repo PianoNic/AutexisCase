@@ -39,10 +39,13 @@ export function useAppAuth() {
     }
   }, [auth.isAuthenticated, auth.user?.access_token, user, syncUser])
 
+  const isVendor = user?.roles?.some(r => r === 'Vendor' || r === 'Admin') ?? false
+
   return {
     isAuthenticated: auth.isAuthenticated,
     isLoading: auth.isLoading || syncing,
     user,
+    isVendor,
     accessToken: auth.user?.access_token ?? null,
     login: () => auth.signinRedirect(),
     logout: () => auth.signoutRedirect(),
