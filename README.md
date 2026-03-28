@@ -4,7 +4,11 @@
 
 > **{baden: hackt} 2026** — Team Autexis
 
-<h3 align="center"><a href="docs/demo.mp4">Demo-Video ansehen</a></h3>
+<p align="center">
+  <a href="https://youtube.com/shorts/7445KKmSd6s">
+    <img src="https://img.shields.io/badge/Demo_Video-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Demo Video" />
+  </a>
+</p>
 
 | Login | Produkt-Journey | Vendor Dashboard |
 |:---:|:---:|:---:|
