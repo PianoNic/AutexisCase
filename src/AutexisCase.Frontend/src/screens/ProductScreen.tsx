@@ -717,8 +717,11 @@ export default function ProductScreen() {
         setActiveSnapPoint={setSnap}
       >
         <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
-          {events.length > 0 && !isFullyOpen && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
+          {events.length > 0 && (
+            <div
+              className="pointer-events-none absolute inset-x-0 bottom-full pb-2 transition-all duration-300"
+              style={{ opacity: isFullyOpen ? 0 : 1, transform: isFullyOpen ? 'scale(0.95) translateY(8px)' : 'scale(1) translateY(0)' }}
+            >
               <div
                 ref={scrollRef}
                 onScroll={compactJourney ? undefined : handleScroll}
