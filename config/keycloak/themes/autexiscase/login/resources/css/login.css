@@ -6,6 +6,16 @@ html, body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 
+/* Override PF CSS variables globally */
+:root {
+  --pf-global--primary-color--100: #16a34a !important;
+  --pf-global--primary-color--200: #15803d !important;
+  --pf-global--BorderRadius--sm: 9999px !important;
+  --pf-c-button--BorderRadius: 9999px !important;
+  --pf-c-button--after--BorderRadius: 9999px !important;
+  --pf-c-button--m-control--BorderRadius: 0 9999px 9999px 0 !important;
+}
+
 .login-pf body,
 body.login-pf {
   background: #f9fafb !important;
@@ -176,11 +186,16 @@ body.login-pf {
 }
 
 /* Password toggle eye button */
-.login-pf .pf-c-button.pf-m-control {
+.login-pf .pf-c-button.pf-m-control,
+.login-pf .pf-c-button.pf-m-control::after {
+  --pf-c-button--BorderRadius: 0 9999px 9999px 0 !important;
+  --pf-c-button--m-control--BorderRadius: 0 9999px 9999px 0 !important;
+  --pf-c-button--after--BorderRadius: 0 9999px 9999px 0 !important;
   border-radius: 0 9999px 9999px 0 !important;
   border: 1px solid #e5e5e5 !important;
   border-left: none !important;
   background: white !important;
+  background-color: white !important;
   padding: 0 14px !important;
   display: flex !important;
   align-items: center !important;
@@ -191,6 +206,11 @@ body.login-pf {
 
 .login-pf .pf-c-button.pf-m-control:hover {
   background: #f3f4f6 !important;
+  background-color: #f3f4f6 !important;
+}
+
+.login-pf .pf-c-button.pf-m-control:hover::after {
+  border-color: #e5e5e5 !important;
 }
 
 .login-pf .pf-c-button.pf-m-control .fa {
