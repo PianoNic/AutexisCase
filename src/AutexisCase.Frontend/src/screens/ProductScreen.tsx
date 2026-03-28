@@ -807,7 +807,7 @@ export default function ProductScreen() {
                           className="transition-all duration-400 overflow-hidden"
                           style={{
                             padding: compactJourney ? "4px 10px" : expandedCard && index === activeIndex ? "16px" : "16px",
-                            maxHeight: compactJourney ? "32px" : expandedCard && index === activeIndex ? "500px" : "100px",
+                            maxHeight: compactJourney ? "32px" : expandedCard && index === activeIndex ? "600px" : "100px",
                             transition: "max-height 400ms cubic-bezier(0.4, 0, 0.2, 1), padding 300ms ease",
                           }}
                         >
@@ -848,41 +848,53 @@ export default function ProductScreen() {
                                 const desc = descriptions[event.id];
 
                                 return (
-                                  <div className="space-y-3 pt-1">
-                                    {/* Stats row */}
-                                    <div className="flex gap-2 flex-wrap">
+                                  <div className="space-y-3 pt-2 border-t border-border/50">
+                                    {/* Stats grid */}
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="rounded-lg bg-muted/50 px-2.5 py-2">
+                                        <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Datum</p>
+                                        <p className="text-xs font-semibold mt-0.5">{new Date(event.timestamp).toLocaleDateString("de-CH", { day: "numeric", month: "long", year: "numeric" })}</p>
+                                      </div>
                                       {event.temperature != null && (
-                                        <span className="rounded-lg bg-blue-50 border border-blue-200 px-2 py-1 text-[10px] font-medium text-blue-700">
-                                          {event.temperature}°C
-                                        </span>
+                                        <div className="rounded-lg bg-blue-50 border border-blue-100 px-2.5 py-2">
+                                          <p className="text-[9px] text-blue-600 uppercase tracking-wider">Temperatur</p>
+                                          <p className="text-xs font-semibold text-blue-700 mt-0.5">{event.temperature}°C</p>
+                                        </div>
                                       )}
                                       {hrs != null && hrs > 0 && (
-                                        <span className="rounded-lg bg-muted px-2 py-1 text-[10px] font-medium">
-                                          {hrs < 24 ? `${hrs} Std` : `${Math.round(hrs / 24)} Tage`} seit letztem Schritt
-                                        </span>
+                                        <div className="rounded-lg bg-muted/50 px-2.5 py-2">
+                                          <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Transportdauer</p>
+                                          <p className="text-xs font-semibold mt-0.5">{hrs < 24 ? `${hrs} Stunden` : `${Math.round(hrs / 24)} Tage`}</p>
+                                        </div>
                                       )}
                                       {event.co2Kg != null && (
-                                        <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[10px] font-medium text-emerald-700">
-                                          {event.co2Kg} kg CO₂
-                                        </span>
+                                        <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-2">
+                                          <p className="text-[9px] text-emerald-600 uppercase tracking-wider">CO₂-Ausstoss</p>
+                                          <p className="text-xs font-semibold text-emerald-700 mt-0.5">{event.co2Kg} kg</p>
+                                        </div>
                                       )}
                                     </div>
 
-                                    {/* AI description */}
-                                    {desc ? (
-                                      <p className="text-[12px] leading-relaxed text-foreground/80">{desc}</p>
-                                    ) : (
-                                      <div className="space-y-1.5">
-                                        <div className="h-3 w-full rounded bg-muted animate-pulse" />
-                                        <div className="h-3 w-4/5 rounded bg-muted animate-pulse" />
-                                        <div className="h-3 w-3/5 rounded bg-muted animate-pulse" />
-                                      </div>
-                                    )}
+                                    {/* AI insight */}
+                                    <div>
+                                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1.5">Einblick</p>
+                                      {desc ? (
+                                        <p className="text-[12px] leading-[1.6] text-foreground/85">{desc}</p>
+                                      ) : (
+                                        <div className="space-y-2">
+                                          <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-[90%] rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-4/5 rounded bg-muted animate-pulse" />
+                                          <div className="h-3 w-3/5 rounded bg-muted animate-pulse" />
+                                        </div>
+                                      )}
+                                    </div>
 
-                                    {/* Coordinates */}
-                                    <p className="text-[10px] text-muted-foreground font-mono">
-                                      {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
-                                    </p>
+                                    {/* Location detail */}
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+                                      <span>{event.location}</span>
+                                      <span className="font-mono">{event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}</span>
+                                    </div>
                                   </div>
                                 );
                               })()}
