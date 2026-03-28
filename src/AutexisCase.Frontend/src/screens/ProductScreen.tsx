@@ -986,7 +986,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
+            className={`flex-1 overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))] ${isFullyOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}
           >
             <div className="px-4 py-2 space-y-4">
               {/* Origin */}
