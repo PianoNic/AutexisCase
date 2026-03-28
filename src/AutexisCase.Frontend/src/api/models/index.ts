@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './AdminProductDto';
 export * from './AlertDto';
 export * from './AlertSeverity';
 export * from './AlertType';
