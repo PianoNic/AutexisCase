@@ -33,7 +33,8 @@ import { useAppAuth } from "@/auth/use-app-auth";
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
 const contourDemSource = new mlcontour.DemSource({
-  url: "https://demotiles.maplibre.org/terrain-tiles/{z}/{x}/{y}.png",
+  url: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
+  encoding: "terrarium",
   encoding: "mapbox",
   maxzoom: 12,
   worker: true,
@@ -411,6 +412,7 @@ export default function ProductScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [camera, setCamera] = useState<MapCamera>(DEFAULT_CAMERA);
   const [routeProgress, setRouteProgress] = useState(0);
+  const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
   const activeIndexRef = useRef(activeIndex);
   const cameraRef = useRef(camera);
   const animFrameRef = useRef(0);
@@ -470,6 +472,23 @@ export default function ProductScreen() {
                       : undefined,
                   ),
                 );
+                // Fetch real route polylines
+                if (batchData.id) {
+                  fetch(`/api/Product/batch/${batchData.id}/route`, {
+                    headers: { Authorization: `Bearer ${accessToken}` },
+                  })
+                    .then((r) => (r.ok ? r.json() : null))
+                    .then((routeData: { segments: { fromStep: string; toStep: string; points: number[][] }[] } | null) => {
+                      if (routeData?.segments) {
+                        const segMap: Record<string, [number, number][]> = {};
+                        routeData.segments.forEach((seg, i) => {
+                          segMap[String(i)] = seg.points.map(p => [p[1], p[0]] as [number, number]); // [lon, lat] for maplibre
+                        });
+                        setRouteSegments(segMap);
+                      }
+                    })
+                    .catch(console.error);
+                }
               }
             })
             .catch(console.error);
@@ -482,11 +501,13 @@ export default function ProductScreen() {
   const events = batch?.journeyEvents ?? EMPTY_EVENTS;
   const routeLegs = events.slice(0, -1).map((event, index) => {
     const nextEvent = events[index + 1];
+    // Use real ORS route polyline if available, otherwise fall back to straight line
+    const realRoute = routeSegments[String(index)];
     return {
       id: `${event.id}-${nextEvent.id}`,
       event,
       nextEvent,
-      points: getLegPoints(event, nextEvent),
+      points: realRoute && realRoute.length > 0 ? realRoute : getLegPoints(event, nextEvent),
       waypoints: getWaypointPoints(event),
       transportType: event.transportType ?? null,
     };
