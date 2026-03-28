@@ -8,6 +8,8 @@ export * from './BatchDto';
 export * from './BatchSummaryDto';
 export * from './BlockDto';
 export * from './BlockchainDto';
+export * from './ChatMessageDto';
+export * from './ChatResponseDto';
 export * from './CoordinateDto';
 export * from './CreateExampleCommand';
 export * from './ExampleDto';

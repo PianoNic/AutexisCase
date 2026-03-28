@@ -15,6 +15,8 @@ models/BatchDto.ts
 models/BatchSummaryDto.ts
 models/BlockDto.ts
 models/BlockchainDto.ts
+models/ChatMessageDto.ts
+models/ChatResponseDto.ts
 models/CoordinateDto.ts
 models/CreateExampleCommand.ts
 models/ExampleDto.ts

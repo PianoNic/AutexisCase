@@ -1,3 +1,4 @@
+using AutexisCase.Application.Commands;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Queries;
 using Mediator;
@@ -89,6 +90,16 @@ public class ProductController(IMediator mediator) : ControllerBase
     public async Task<IActionResult> GetBatchBlockchain(Guid batchId, CancellationToken cancellationToken)
     {
         var result = await mediator.Send(new GetBatchBlockchainQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpPost("{productId:guid}/chat", Name = "AskProduct")]
+    [ProducesResponseType(typeof(ChatResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AskProduct(Guid productId, [FromQuery] Guid? batchId, [FromBody] ChatMessageDto message, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new AskProductCommand(productId, batchId, message.Content), cancellationToken);
         if (result.IsFailure) return NotFound(result.Error);
         return Ok(result.Value);
     }
