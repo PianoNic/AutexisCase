@@ -32,8 +32,7 @@ builder.Services.AddHttpClient<OpenFoodFactsService>();
 builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<OpenFoodFactsService>());
 builder.Services.AddHttpClient<RoutingService>();
 builder.Services.AddScoped<IRoutingService>(sp => sp.GetRequiredService<RoutingService>());
-builder.Services.AddHttpClient<EpcisService>();
-builder.Services.AddScoped<IEpcisService>(sp => sp.GetRequiredService<EpcisService>());
+builder.Services.AddScoped<IEpcisService, EpcisService>();
 
 
 // Mediator, Validation & Authorization

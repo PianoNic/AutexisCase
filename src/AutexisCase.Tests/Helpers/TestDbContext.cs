@@ -19,6 +19,7 @@ public class TestDbContext : DbContext, IAppDbContext
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<ScanRecord> ScanRecords => Set<ScanRecord>();
     public DbSet<RouteCache> RouteCaches => Set<RouteCache>();
+    public DbSet<EpcisEvent> EpcisEvents => Set<EpcisEvent>();
 
     public static TestDbContext Create()
     {
