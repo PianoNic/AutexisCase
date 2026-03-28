@@ -751,7 +751,7 @@ export default function ProductScreen() {
                 ref={emblaRef}
                 onPointerDownCapture={(event) => event.stopPropagation()}
               >
-                <div className="flex gap-3 px-4">
+                <div className="flex items-stretch gap-3 px-4">
                   {events.map((event, index) => (
                     <div
                       key={event.id}
@@ -765,7 +765,7 @@ export default function ProductScreen() {
                     >
                       <Card
                         size="sm"
-                        className={`bg-background/96 text-left shadow-sm transition-all duration-200 ${
+                        className={`bg-background/96 text-left shadow-sm transition-all duration-200 h-full ${
                           index === activeIndex
                             ? "border-primary ring-2 ring-primary/15"
                             : "border-border"
