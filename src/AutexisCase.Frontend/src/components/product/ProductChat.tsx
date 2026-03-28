@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MessageCircle, Send, X, Loader2 } from "lucide-react";
 import { productApi } from "@/api/client";
@@ -14,6 +14,26 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const onResize = () => {
+      if (!sheetRef.current) return;
+      const keyboardHeight = window.innerHeight - vv.height;
+      sheetRef.current.style.transform = keyboardHeight > 0 ? `translateY(-${keyboardHeight}px)` : "";
+    };
+
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, [open]);
 
   const send = async () => {
     const question = input.trim();
@@ -62,7 +82,8 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
             onTouchStartCapture={(e) => e.stopPropagation()}
           />
           <div
-            className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background flex flex-col max-h-[85dvh]"
+            ref={sheetRef}
+            className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background flex flex-col max-h-[85dvh] transition-transform duration-100"
             data-vaul-no-drag
             onTouchMoveCapture={(e) => e.stopPropagation()}
           >
