@@ -877,7 +877,12 @@ export default function ProductScreen() {
 
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{event.location}</span>
-                                <span>{formatEventDate(event.timestamp)}</span>
+                                <span className="text-right leading-tight">
+                                  {event.timestamp && <>
+                                    <span className="block">{new Date(event.timestamp).toLocaleDateString("de-CH", { month: "short" })}</span>
+                                    <span className="block">{new Date(event.timestamp).getFullYear()}</span>
+                                  </>}
+                                </span>
                               </div>
 
                               {/* Expanded detail content */}
