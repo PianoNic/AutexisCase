@@ -334,7 +334,7 @@ export default function ProductScreen() {
   // Scroll content to top when drawer collapses from full
   useEffect(() => {
     if (!isFullyOpen && drawerScrollRef.current) {
-      drawerScrollRef.current.scrollTop = 0;
+      drawerScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [isFullyOpen]);
 
