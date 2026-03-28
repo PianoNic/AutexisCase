@@ -20,7 +20,7 @@ export function AlternativesCard({ data }: { data: ProductAlternativesDto }) {
               <p className="text-xs font-medium truncate">{alt.name}</p>
               <p className="text-[10px] text-muted-foreground">{alt.brand} · {alt.co2Kg} kg CO₂</p>
             </div>
-            <div className="flex flex-wrap gap-1 shrink-0">
+            <div className="flex flex-wrap gap-1 min-w-0">
               {(alt.improvementTags ?? []).slice(0, 2).map((tag) => (
                 <span key={tag} className="rounded-full bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 text-[9px] text-emerald-700 font-medium">
                   {tag}
