@@ -4,7 +4,7 @@
   "displayNameHtml": "<div style='text-align:center'><h1 style='color:#16a34a;font-size:24px;margin:0'>Track my Food</h1><p style='color:#666;font-size:13px;margin:4px 0 0'>Scanne. Verfolge. Vertraue.</p></div>",
   "enabled": true,
   "sslRequired": "none",
-  "loginTheme": "keycloak",
+  "loginTheme": "autexiscase",
   "registrationAllowed": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,

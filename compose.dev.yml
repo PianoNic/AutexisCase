@@ -22,6 +22,7 @@ services:
     command: start-dev --import-realm
     volumes:
       - ./config/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+      - ./config/keycloak/themes/autexiscase:/opt/keycloak/themes/autexiscase:ro
     ports:
       - "8180:8180"
     restart: unless-stopped
