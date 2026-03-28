@@ -1,20 +1,20 @@
 # Track my Food
 
-**Scanne. Verfolge. Vertraue.** — AI-powered food supply chain transparency, from field to shelf.
+**Scanne. Verfolge. Vertraue.** — KI-gestützter Lebensmittel-Tracker, vom Feld bis ins Regal.
 
 > **{baden: hackt} 2026** — Team Autexis
 
-| Login | Product Journey | Vendor Dashboard |
+| Login | Produkt-Journey | Vendor Dashboard |
 |:---:|:---:|:---:|
-| ![Login](docs/screenshots/01-login.png) | ![Product](docs/screenshots/04-product-map.png) | ![Vendor](docs/screenshots/06-vendor-dashboard.png) |
+| ![Login](docs/screenshots/01-login.png) | ![Produkt](docs/screenshots/04-product-map.png) | ![Vendor](docs/screenshots/06-vendor-dashboard.png) |
 
 ---
 
-## What it does
+## Was ist Track my Food?
 
-Consumers scan a barcode, see the full journey of their food on an interactive map, verify the supply chain via blockchain, and chat with an AI about the product. Vendors get a role-based dashboard for quality management, recalls, and customer reports.
+Konsumenten scannen einen Barcode, sehen die gesamte Reise ihres Lebensmittels auf einer interaktiven Karte, verifizieren die Lieferkette per Blockchain und können einem KI-Chatbot Fragen zum Produkt stellen. Vendoren erhalten ein rollenbasiertes Dashboard zur Qualitätskontrolle, Rückrufverwaltung und Bearbeitung von Kundenmeldungen.
 
-**Key Features:** Barcode + LOT scan (AI OCR) · cinematic journey map · shelf life prediction · cold chain anomaly detection · CO2 sustainability analysis · blockchain verification · RAG product chat · EPCIS 2.0 · vendor portal with RBAC
+**Kernfunktionen:** Barcode + LOT-Scan (KI-OCR) · cinematic Journey-Karte · Haltbarkeitsprognose · Kühlketten-Anomalieerkennung · CO₂-Nachhaltigkeitsanalyse · Blockchain-Verifizierung · RAG-Produkt-Chat · EPCIS 2.0 · Vendor Portal mit RBAC
 
 ---
 
@@ -24,15 +24,15 @@ Consumers scan a barcode, see the full journey of their food on an interactive m
 |---|---|
 | **Frontend** | React 19, Vite, Tailwind v4, shadcn/ui, MapLibre GL |
 | **Backend** | .NET 10, Clean Architecture, CQRS, Semantic Kernel |
-| **Data** | PostgreSQL 18, EF Core 10, OpenAPI |
-| **Auth** | Keycloak 26 (OIDC, PKCE, role-based vendor access) |
-| **AI** | Gemini 2.0 Flash via OpenRouter (OCR + RAG chat) |
+| **Datenbank** | PostgreSQL 18, EF Core 10, OpenAPI |
+| **Auth** | Keycloak 26 (OIDC, PKCE, rollenbasierter Vendor-Zugang) |
+| **KI** | Gemini 2.0 Flash via OpenRouter (OCR + RAG-Chat) |
 | **Standards** | GS1/EPCIS 2.0, OpenRouteService |
-| **Quality** | 44 xUnit tests, CI/CD gate on PRs |
+| **Qualität** | 44 xUnit-Tests, CI/CD-Gate bei PRs |
 
 ---
 
-## Quick Start
+## Schnellstart
 
 ```bash
 git clone https://github.com/PianoNic/AutexisCase.git
@@ -42,13 +42,13 @@ dotnet run --project src/AutexisCase.API    # Backend
 cd src/AutexisCase.Frontend && bun install && bun run dev  # Frontend
 ```
 
-**Demo login:** `vendor-demo` / `demo1234` (vendor) or `user-demo` / `demo1234` (consumer)
+**Demo-Login:** `vendor-demo` / `demo1234` (Vendor) oder `user-demo` / `demo1234` (Konsument)
 
-> Full setup instructions in [Testing & Setup](docs/testing-und-setup.md)
+> Vollständige Einrichtung unter [Testing & Setup](docs/testing-und-setup.md)
 
 ---
 
-## Docs
+## Dokumentation
 
 - **[Produktübersicht](docs/produktuebersicht.md)** — Problem, Zielgruppen, Nutzen, Roadmap
 - **[Anwenderguide](docs/anwenderguide.md)** — Scan, LOT, Karte, Chat, Meldungen
@@ -58,14 +58,14 @@ cd src/AutexisCase.Frontend && bun install && bun run dev  # Frontend
 
 ---
 
-## Demo Products
+## Demo-Produkte
 
-| Product | Status | Scenario |
+| Produkt | Status | Szenario |
 |---------|--------|----------|
-| Swiss Dark Chocolate 72% (Lindt) | Warning | Cold chain break at 24°C during transport |
-| Feine Milchschokolade Pistazie (Frey) | OK | Clean 9-step journey, real ingredient origins |
-| Bio Crunchy Müesli (Familia) | **Recall** | Metal fragments, BLV recall order |
+| Swiss Dark Chocolate 72% (Lindt) | Warnung | Kühlkettenbruch bei 24°C während Transport |
+| Feine Milchschokolade Pistazie (Frey) | OK | 9-Schritte-Journey, echte Herkunftsdaten |
+| Bio Crunchy Müesli (Familia) | **Rückruf** | Metallfremdkörper, BLV-Rückrufanordnung |
 
 ---
 
-<p align="center"><sub>Built with .NET 10 · React 19 · PostgreSQL · Keycloak · Semantic Kernel</sub></p>
+<p align="center"><sub>Gebaut mit .NET 10 · React 19 · PostgreSQL · Keycloak · Semantic Kernel</sub></p>
