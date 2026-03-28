@@ -792,7 +792,7 @@ export default function ProductScreen() {
       </div>
 
       <Drawer
-        open={reportStep === "closed"}
+        open
         modal={false}
         snapPoints={SNAP_POINTS}
         activeSnapPoint={snap}
@@ -1072,12 +1072,11 @@ export default function ProductScreen() {
         </DrawerContent>
       </Drawer>
 
-      {/* Report sheets — portaled to body to escape drawer event capture */}
+      {/* Report popups — portaled to body */}
       {reportStep === "reason" && createPortal(
-        <div className="fixed inset-0 z-[200]">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
-            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setReportStep("closed")} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl space-y-4">
             <div className="text-center">
               <Flag className="h-6 w-6 text-red-500 mx-auto mb-1" />
               <p className="text-base font-semibold">Problem melden</p>
@@ -1103,10 +1102,9 @@ export default function ProductScreen() {
       )}
 
       {reportStep === "detail" && createPortal(
-        <div className="fixed inset-0 z-[200]">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
-            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setReportStep("closed")} />
+          <div className="relative w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl space-y-4">
             <div className="text-center">
               <p className="text-base font-semibold">{reportReason}</p>
               <p className="text-xs text-muted-foreground mt-0.5">Beschreibe das Problem{reportReason !== "Sonstiges" ? " (optional)" : ""}</p>
