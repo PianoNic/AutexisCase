@@ -1,6 +1,15 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { AuthProvider as OidcAuthProvider } from 'react-oidc-context'
+import { AuthProvider as OidcAuthProvider, useAuth } from 'react-oidc-context'
 import { WebStorageStateStore } from 'oidc-client-ts'
+import { setApiToken } from '@/api/client'
+
+function TokenSync({ children }: { children: ReactNode }) {
+  const auth = useAuth()
+  useEffect(() => {
+    setApiToken(auth.user?.access_token ?? null)
+  }, [auth.user?.access_token])
+  return <>{children}</>
+}
 
 interface AppConfig {
   authority: string
@@ -32,8 +41,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <OidcAuthProvider
       authority={config.authority}
       client_id={config.clientId}
-      redirect_uri={config.redirectUri}
-      post_logout_redirect_uri={config.postLogoutRedirectUri}
+      redirect_uri={`${window.location.origin}/callback`}
+      post_logout_redirect_uri={`${window.location.origin}/`}
       scope={config.scope}
       response_type="code"
       userStore={new WebStorageStateStore({ store: window.localStorage })}
@@ -41,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.history.replaceState({}, document.title, window.location.pathname)
       }}
     >
-      {children}
+      <TokenSync>{children}</TokenSync>
     </OidcAuthProvider>
   )
 }
