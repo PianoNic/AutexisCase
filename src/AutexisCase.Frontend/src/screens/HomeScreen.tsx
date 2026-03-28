@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { ChevronRight, ScanLine, Award, Package, AlertTriangle } from 'lucide-react'
 import { scanApi } from '@/api/client'
 import { useAppAuth } from '@/auth/use-app-auth'
@@ -14,6 +14,7 @@ const severityDot: Record<string, string> = {
 
 export default function HomeScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { accessToken } = useAppAuth()
   const [scans, setScans] = useState<ScanRecordDto[]>([])
   const [alerts, setAlerts] = useState<AlertDto[]>([])
@@ -31,9 +32,10 @@ export default function HomeScreen() {
     })
   }
 
+  // Refetch every time the home screen becomes active (token ready + navigated here)
   useEffect(() => {
     fetchData()
-  }, [accessToken])
+  }, [accessToken, location.key])
 
   useEffect(() => {
     const onVisible = () => { if (!document.hidden) fetchData() }
