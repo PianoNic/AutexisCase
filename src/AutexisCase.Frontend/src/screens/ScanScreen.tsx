@@ -44,6 +44,7 @@ export default function ScanScreen() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const foundRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState<string | null>(null)
   const [showManual, setShowManual] = useState(false)
   const [barcode, setBarcode] = useState('')
   const [foundCode, setFoundCode] = useState<string | null>(null)
@@ -57,13 +58,34 @@ export default function ScanScreen() {
     foundRef.current = true
     setFoundCode(gtin)
 
+    // Check if product exists first
+    let productExists = false
     if (accessToken) {
+      try {
+        const res = await fetch(`/api/Product/gtin/${gtin}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+        productExists = res.ok
+      } catch {}
+
+      // Record scan (best effort)
       try {
         await fetch(`/api/Scan/${gtin}`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}` },
         })
-      } catch { /* best effort */ }
+      } catch {}
+    }
+
+    if (!productExists) {
+      // Show not-found toast, let user try again
+      setTimeout(() => {
+        setFoundCode(null)
+        setNotFound(gtin)
+        foundRef.current = false
+        setTimeout(() => setNotFound(null), 4000)
+      }, 1200)
+      return
     }
 
     // Show confirmation briefly, then release camera and navigate
@@ -241,6 +263,14 @@ export default function ScanScreen() {
           </div>
         )}
       </div>
+
+      {/* Not found toast */}
+      {notFound && (
+        <div className="absolute left-4 right-4 top-24 z-30 rounded-2xl bg-red-500/90 backdrop-blur-sm px-4 py-3 text-center">
+          <p className="text-sm font-semibold text-white">Produkt nicht gefunden</p>
+          <p className="text-xs text-white/80 mt-0.5">EAN {notFound} ist nicht in der Datenbank</p>
+        </div>
+      )}
 
       {/* Bottom-pinned manual entry */}
       {showManual && !foundCode && (
