@@ -44,9 +44,14 @@ export function BlockchainCard({ batchId }: { batchId: string }) {
 
       {/* Bottom sheet modal */}
       {open && (
-        <div className="fixed inset-0 z-[60]">
+        <div
+          className="fixed inset-0 z-[60]"
+          onPointerDownCapture={(e) => e.stopPropagation()}
+          onTouchStartCapture={(e) => e.stopPropagation()}
+          onTouchMoveCapture={(e) => e.stopPropagation()}
+        >
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4 max-h-[80dvh] flex flex-col">
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4 max-h-[80dvh] flex flex-col" data-vaul-no-drag>
             <div className="mx-auto h-1 w-10 rounded-full bg-muted shrink-0" />
 
             {/* Header */}
