@@ -19,7 +19,7 @@ import type { ScanRecordDto } from '@/api/models/ScanRecordDto'
 import type { AlertDto } from '@/api/models/AlertDto'
 
 export default function ProfileScreen() {
-  const { user, logout, isLoading } = useAppAuth()
+  const { user, logout, isLoading, isVendor } = useAppAuth()
   const navigate = useNavigate()
   const [scans, setScans] = useState<ScanRecordDto[]>([])
   const [alerts, setAlerts] = useState<AlertDto[]>([])
@@ -89,7 +89,8 @@ export default function ProfileScreen() {
 
           <Separator />
 
-          {/* Admin Panel Link */}
+          {/* Vendor Portal Link — only for vendors */}
+          {isVendor && (
           <button
             onClick={() => navigate('/admin')}
             className="flex w-full items-center gap-3 rounded-xl border bg-card p-3.5 text-left active:bg-accent transition-colors"
@@ -98,8 +99,8 @@ export default function ProfileScreen() {
               <ShieldCheck className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold">Admin Panel</p>
-              <p className="text-[11px] text-muted-foreground">Produkte, Meldungen & Scans verwalten</p>
+              <p className="text-sm font-semibold">Vendor Portal</p>
+              <p className="text-[11px] text-muted-foreground">Produkte, Meldungen & Qualität verwalten</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               {unreadAlerts > 0 && (
@@ -110,6 +111,7 @@ export default function ProfileScreen() {
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </div>
           </button>
+          )}
 
           <Separator />
 

@@ -1,8 +1,10 @@
 using System.Net.Http.Headers;
+using System.Security.Claims;
 using System.Text.Json;
 using AutexisCase.Application.Dtos;
 using AutexisCase.Application.Interfaces;
 using AutexisCase.Application.Mappers;
+using AutexisCase.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AutexisCase.API.Controllers;
@@ -31,7 +33,19 @@ public class AuthController(ICurrentUserService currentUserService, IUserSyncSer
             avatarUrl = userInfo.Picture;
         }
 
-        var user = await userSyncService.SyncUserAsync(currentUserService.ExternalId, email, displayName, avatarUrl, cancellationToken);
+        // Extract roles from JWT claims (Keycloak sends "roles" or "groups" claim)
+        var roles = new List<UserRole>();
+        var roleClaims = HttpContext.User.FindAll("roles").Select(c => c.Value)
+            .Concat(HttpContext.User.FindAll("groups").Select(c => c.Value))
+            .Concat(HttpContext.User.FindAll(ClaimTypes.Role).Select(c => c.Value))
+            .Distinct();
+
+        if (roleClaims.Any(r => r.Equals("vendor", StringComparison.OrdinalIgnoreCase)))
+            roles.Add(UserRole.Vendor);
+        if (roleClaims.Any(r => r.Equals("admin", StringComparison.OrdinalIgnoreCase)))
+            roles.Add(UserRole.Admin);
+
+        var user = await userSyncService.SyncUserAsync(currentUserService.ExternalId, email, displayName, avatarUrl, cancellationToken, roles);
         return Ok(user.ToDto());
     }
 
@@ -44,11 +58,21 @@ public class AuthController(ICurrentUserService currentUserService, IUserSyncSer
         if (string.IsNullOrEmpty(accessToken)) return null;
 
         var client = httpClientFactory.CreateClient();
-        var request = new HttpRequestMessage(HttpMethod.Get, $"{authority.TrimEnd('/')}/api/oidc/userinfo");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
+        // Try Keycloak userinfo endpoint first, then Pocket ID format
+        var userinfoUrl = $"{authority.TrimEnd('/')}/protocol/openid-connect/userinfo";
+        var request = new HttpRequestMessage(HttpMethod.Get, userinfoUrl);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         var response = await client.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode) return null;
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Fallback to Pocket ID format
+            request = new HttpRequestMessage(HttpMethod.Get, $"{authority.TrimEnd('/')}/api/oidc/userinfo");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            response = await client.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode) return null;
+        }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<OidcUserInfo>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
