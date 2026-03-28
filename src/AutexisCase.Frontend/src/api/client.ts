@@ -12,6 +12,17 @@ export function setApiToken(token: string | null) {
 const config = new Configuration({
   basePath: '',
   accessToken: () => accessToken ?? '',
+  middleware: [{
+    post: async (context) => {
+      if (context.response.status === 401) {
+        // Clear stale token and redirect to login
+        accessToken = null
+        window.localStorage.clear()
+        window.location.href = '/login'
+      }
+      return context.response
+    }
+  }],
 })
 
 export const productApi = new ProductApi(config)
