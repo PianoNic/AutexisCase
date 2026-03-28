@@ -74,6 +74,13 @@ Claude will run the appropriate chime command automatically when:
 - A task or major step is completed
 - User input or a decision is required
 
+## Testing
+
+- **Every command, query, and service MUST have unit tests.**
+- Tests live in `src/AutexisCase.Tests`
+- Use xUnit v3 with EF Core InMemory provider for handler tests
+- Run tests: `dotnet test src/AutexisCase.Tests`
+
 ## Branch Naming
 
 All branches must follow this convention:
