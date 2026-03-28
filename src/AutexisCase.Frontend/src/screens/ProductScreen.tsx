@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { productApi } from "@/api/client";
+import { productApi, getJourneyEventDescription } from "@/api/client";
 import type { ProductDto } from "@/api/models/ProductDto";
 import type { BatchDto } from "@/api/models/BatchDto";
 import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
@@ -298,6 +298,9 @@ export default function ProductScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
+  const [expandedCardIndex, setExpandedCardIndex] = useState<number | null>(null);
+  const [descriptions, setDescriptions] = useState<Record<string, string>>({});
+  const [loadingDesc, setLoadingDesc] = useState<string | null>(null);
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
   const [reportReason, setReportReason] = useState("");
   const [reportDetail, setReportDetail] = useState("");
@@ -758,15 +761,40 @@ export default function ProductScreen() {
                       key={event.id}
                       ref={(element) => { cardsRef.current[index] = element; }}
                       onClick={() => {
-                        clickedRef.current = true;
-                        setActiveIndex(index);
+                        if (compactJourney) {
+                          clickedRef.current = true;
+                          setActiveIndex(index);
+                          return;
+                        }
+                        if (index !== activeIndex) {
+                          clickedRef.current = true;
+                          setActiveIndex(index);
+                          return;
+                        }
+                        // Toggle expand on active card
+                        if (expandedCardIndex === index) {
+                          setExpandedCardIndex(null);
+                        } else {
+                          setExpandedCardIndex(index);
+                          // Fetch AI description if not cached
+                          if (event.id && !descriptions[event.id] && !loadingDesc) {
+                            setLoadingDesc(event.id);
+                            getJourneyEventDescription(event.id)
+                              .then((desc) => setDescriptions((prev) => ({ ...prev, [event.id]: desc })))
+                              .catch(() => setDescriptions((prev) => ({ ...prev, [event.id]: "Beschreibung konnte nicht geladen werden." })))
+                              .finally(() => setLoadingDesc(null));
+                          }
+                        }
                       }}
                       className="shrink-0 cursor-pointer"
-                      style={{ flex: compactJourney ? '0 0 auto' : '0 0 280px', transition: 'flex-basis 300ms ease' }}
+                      style={{
+                        flex: compactJourney ? '0 0 auto' : expandedCardIndex === index ? '0 0 320px' : '0 0 280px',
+                        transition: 'flex-basis 300ms ease',
+                      }}
                     >
                       <Card
                         size="sm"
-                        className={`bg-background/96 text-left shadow-sm transition-all duration-200 h-full ${
+                        className={`bg-background/96 text-left shadow-sm transition-all duration-300 h-full ${
                           index === activeIndex
                             ? "border-primary ring-2 ring-primary/15"
                             : "border-border"
@@ -776,7 +804,7 @@ export default function ProductScreen() {
                           className="transition-all duration-300 overflow-hidden"
                           style={{
                             padding: compactJourney ? "4px 10px" : "16px",
-                            maxHeight: compactJourney ? "32px" : "200px",
+                            maxHeight: compactJourney ? "32px" : expandedCardIndex === index ? "400px" : "120px",
                           }}
                         >
                           {compactJourney ? (
@@ -806,9 +834,36 @@ export default function ProductScreen() {
                                 <span>{formatEventDate(event.timestamp)}</span>
                               </div>
 
-                              {event.details && (
-                                <p className="text-[13px] leading-snug text-foreground/75">
-                                  {event.details}
+                              {/* AI description — expanded state */}
+                              {expandedCardIndex === index && (
+                                <div className="space-y-2 pt-1">
+                                  {event.temperature != null && (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                      <span>🌡️</span>
+                                      <span>{event.temperature}°C</span>
+                                    </div>
+                                  )}
+                                  {loadingDesc === event.id ? (
+                                    <div className="space-y-1.5">
+                                      <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                                      <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
+                                    </div>
+                                  ) : descriptions[event.id] ? (
+                                    <p className="text-[12px] leading-relaxed text-foreground/80">
+                                      {descriptions[event.id]}
+                                    </p>
+                                  ) : event.details ? (
+                                    <p className="text-[12px] leading-relaxed text-foreground/80">
+                                      {event.details}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              )}
+
+                              {/* Expand hint on active non-expanded card */}
+                              {index === activeIndex && expandedCardIndex !== index && (
+                                <p className="text-[10px] text-muted-foreground/60 text-center">
+                                  Tippen für Details
                                 </p>
                               )}
                             </div>
