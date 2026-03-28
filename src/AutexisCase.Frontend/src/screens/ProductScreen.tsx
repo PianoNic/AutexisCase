@@ -35,6 +35,7 @@ import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
 import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from "@/data/mock-ai";
 import { ShelfLifeCard } from "@/components/product/ShelfLifeCard";
 import { AlternativesCard } from "@/components/product/AlternativesCard";
+import { BlockchainCard } from "@/components/product/BlockchainCard";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
@@ -951,6 +952,9 @@ export default function ProductScreen() {
                   </p>
                 </section>
               )}
+
+              {/* Blockchain verification */}
+              {batch?.id && <BlockchainCard batchId={batch.id} />}
 
               {/* Alternatives */}
               {alternatives && <AlternativesCard data={alternatives} />}

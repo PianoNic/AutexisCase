@@ -83,6 +83,16 @@ public class ProductController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpGet("batch/{batchId:guid}/blockchain", Name = "GetBatchBlockchain")]
+    [ProducesResponseType(typeof(BlockchainDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBatchBlockchain(Guid batchId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetBatchBlockchainQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
     [HttpGet("route", Name = "GetPointToPointRoute")]
     [ProducesResponseType(typeof(PointToPointRouteDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoute([FromQuery] double fromLat, [FromQuery] double fromLon, [FromQuery] double toLat, [FromQuery] double toLon, [FromQuery] string profile = "driving-hgv", CancellationToken cancellationToken = default)

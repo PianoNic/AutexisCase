@@ -6,6 +6,8 @@ export * from './AlertType';
 export * from './AppConfigDto';
 export * from './BatchDto';
 export * from './BatchSummaryDto';
+export * from './BlockDto';
+export * from './BlockchainDto';
 export * from './CoordinateDto';
 export * from './CreateExampleCommand';
 export * from './ExampleDto';

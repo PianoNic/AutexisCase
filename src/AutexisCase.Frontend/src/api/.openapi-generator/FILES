@@ -1,5 +1,6 @@
 apis/AppApi.ts
 apis/AuthApi.ts
+apis/EpcisApi.ts
 apis/ExampleApi.ts
 apis/OcrApi.ts
 apis/ProductApi.ts
@@ -12,6 +13,8 @@ models/AlertType.ts
 models/AppConfigDto.ts
 models/BatchDto.ts
 models/BatchSummaryDto.ts
+models/BlockDto.ts
+models/BlockchainDto.ts
 models/CoordinateDto.ts
 models/CreateExampleCommand.ts
 models/ExampleDto.ts
