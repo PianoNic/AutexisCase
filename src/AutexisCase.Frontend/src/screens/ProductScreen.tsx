@@ -954,16 +954,18 @@ export default function ProductScreen() {
             </div>
           )}
 
-          <DrawerHeader className="shrink-0 pb-2">
-            <DrawerTitle className="text-sm font-semibold text-muted-foreground">
-              {product.brand}{product.weight ? ` · ${product.weight}` : ''}
-            </DrawerTitle>
-            {(lot || batch?.lotNumber) && (
-              <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-0.5 w-fit">
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
-                <span className="text-[11px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
-              </span>
-            )}
+          <DrawerHeader className="shrink-0 pb-2 !text-left">
+            <div className="flex items-center gap-2 flex-wrap">
+              <DrawerTitle className="text-sm font-semibold text-muted-foreground">
+                {product.brand}{product.weight ? ` · ${product.weight}` : ''}
+              </DrawerTitle>
+              {(lot || batch?.lotNumber) && (
+                <span className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-1.5 py-0.5">
+                  <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
+                  <span className="text-[10px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
+                </span>
+              )}
+            </div>
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
