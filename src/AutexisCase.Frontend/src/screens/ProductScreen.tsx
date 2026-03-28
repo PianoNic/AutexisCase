@@ -783,11 +783,8 @@ export default function ProductScreen() {
                       ref={(element) => { cardsRef.current[index] = element; }}
                       onClick={() => {
                         if (compactJourney) {
-                          // Push drawer down to peek, expand cards
                           clickedRef.current = true;
                           setActiveIndex(index);
-                          setSnap(SNAP_POINTS[0]);
-                          setExpandedCard(true);
                           return;
                         }
                         if (index !== activeIndex) {
