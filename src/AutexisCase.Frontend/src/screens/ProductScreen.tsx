@@ -536,8 +536,13 @@ export default function ProductScreen() {
       scrollFrameRef.current = 0;
     }
 
-    syncActiveIndexFromScroll();
-  }, [syncActiveIndexFromScroll]);
+    const idx = getClosestIndex();
+    if (idx != null) {
+      activeIndexRef.current = idx;
+      setActiveIndex(idx);
+      scrollToCard(idx, "smooth");
+    }
+  }, [getClosestIndex, scrollToCard]);
 
   useEffect(() => {
     if (events.length === 0) return;
@@ -730,7 +735,7 @@ export default function ProductScreen() {
                 className={`pointer-events-auto flex items-center gap-0 overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
                   compactJourney
                     ? "overflow-x-hidden"
-                    : "snap-x snap-mandatory overflow-x-auto touch-pan-x"
+                    : "overflow-x-auto touch-pan-x"
                 }`}
               >
                 <div className="w-[40%] shrink-0" />
@@ -774,7 +779,7 @@ export default function ProductScreen() {
                           setActiveIndex(index);
                         }
                       }}
-                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : "snap-center [scroll-snap-stop:always]"}`}
+                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : ""}`}
                     >
                       <Card
                         size="sm"
