@@ -1,8 +1,6 @@
 # Track my Food
 
-**AI-powered food supply chain tracker — from field to store shelf.**
-
-Consumers scan a barcode, see exactly where their food comes from, how it was transported, and whether the cold chain was maintained. Vendors get a dashboard to manage product quality, alerts, and customer reports.
+**Scanne. Verfolge. Vertraue.** — AI-powered food supply chain transparency, from field to shelf.
 
 > **{baden: hackt} 2026** — Team Autexis
 
@@ -10,208 +8,64 @@ Consumers scan a barcode, see exactly where their food comes from, how it was tr
 |:---:|:---:|:---:|
 | ![Login](docs/screenshots/01-login.png) | ![Product](docs/screenshots/04-product-map.png) | ![Vendor](docs/screenshots/06-vendor-dashboard.png) |
 
-## Docs
-
-- **[Produktübersicht](docs/produktuebersicht.md)** — Warum Lebensmitteltransparenz? Problem, Zielgruppen, Nutzen und Roadmap
-- **[Anwenderguide](docs/anwenderguide.md)** — Schritt-für-Schritt durch die App: Scan, LOT, Karte, Chat, Meldungen
-- **[Vendorguide](docs/vendorguide.md)** — Vendor Portal: Qualitäts-Dashboard, Rückrufe, Kundenmeldungen
-- **[Technik & Betrieb](docs/technik-und-betrieb.md)** — Architektur, Patterns, EPCIS 2.0, Blockchain, Deployment
-- **[Testing & Setup](docs/testing-und-setup.md)** — Lokales Setup, Demo-Accounts, 44 Tests, CI/CD, API-Referenz
-
 ---
 
-## Features
+## What it does
 
-### Consumer App
-- **Barcode Scanner** — Camera-based EAN/GTIN scanning (native BarcodeDetector + zxing-wasm fallback)
-- **LOT Capture** — AI-powered OCR extracts batch/LOT numbers from packaging photos (Semantic Kernel + Gemini Vision)
-- **Interactive Journey Map** — Cinematic MapLibre GL map with route polylines, camera fly-to animations, and journey event cards
-- **Shelf Life Prediction** — AI-computed quality curve with risk factors and confidence scores
-- **Anomaly Detection** — Cold chain monitoring with temperature spike detection and chain integrity scoring
-- **Sustainability Analysis** — CO2 breakdown by supply chain stage, water footprint, transport distance (Haversine), packaging score
-- **Blockchain Verification** — SHA-256 hash chain for tamper-proof supply chain verification
-- **Product Chat (RAG)** — Ask questions about any product, powered by Semantic Kernel with full product context
-- **Product Alternatives** — Recommends similar products with better sustainability or nutrition scores
-- **Report Issues** — Multi-step reporting flow, persisted to DB, visible in vendor dashboard
+Consumers scan a barcode, see the full journey of their food on an interactive map, verify the supply chain via blockchain, and chat with an AI about the product. Vendors get a role-based dashboard for quality management, recalls, and customer reports.
 
-### Vendor Portal (Role-based)
-- **Quality Dashboard** — Overview of all products, alerts, and customer reports
-- **Recall Management** — Critical alerts with severity levels, automatic product flagging
-- **Customer Reports** — View and manage reports submitted by consumers
-- **Role-based Access** — Only users with the `vendor` role (via Keycloak groups) see the Vendor Portal
-
-### Standards & Integrations
-- **GS1 / EPCIS 2.0** — Supply chain events mapped to EPCIS standard (ObjectEvent, bizStep, disposition)
-- **OpenRouteService** — Real truck/car route polylines with intelligent caching (30-day TTL)
-- **Open Food Facts** — Auto-fetch product data for unknown GTINs
-- **Keycloak OIDC** — Self-hosted identity provider with custom-themed login, PKCE, role-based access
-
----
-
-## Architecture
-
-```
-                    Frontend (React 19)
-  Vite | Tailwind CSS v4 | shadcn/ui | MapLibre GL
-  OpenAPI-generated TypeScript client
-                       |
-                  REST API (JWT)
-                       |
-                 Backend (.NET 10)
-  ASP.NET Core | Clean Architecture | CQRS (Mediator)
-  Entity Framework Core | Semantic Kernel
-                       |
-         +-------------+-------------+
-         |                           |
-    PostgreSQL 18              Keycloak 26
-    + Route Cache              OIDC / JWT
-    + EPCIS Events             RBAC
-```
-
-### Design Patterns
-- **Clean Architecture** — Domain, Application, Infrastructure, API layers
-- **CQRS** — Commands and queries separated via Mediator pattern
-- **Result Pattern** — No exceptions for flow control, typed `Result<T>` return values
-- **Authorization Behaviors** — Pipeline behaviors for authentication and validation
+**Key Features:** Barcode + LOT scan (AI OCR) · cinematic journey map · shelf life prediction · cold chain anomaly detection · CO2 sustainability analysis · blockchain verification · RAG product chat · EPCIS 2.0 · vendor portal with RBAC
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
+| | |
 |---|---|
-| **Frontend** | React 19, Vite, Tailwind CSS v4, shadcn/ui, MapLibre GL |
-| **Backend** | .NET 10, ASP.NET Core, Entity Framework Core 10 |
-| **Database** | PostgreSQL 18 |
-| **Auth** | Keycloak 26 (OIDC, PKCE, RBAC) |
-| **AI/ML** | Microsoft Semantic Kernel + OpenRouter (Gemini 2.0 Flash) |
-| **Maps** | MapLibre GL JS, OpenRouteService |
-| **Standards** | GS1/EPCIS 2.0, OpenAPI 3.0 |
-| **Testing** | xUnit v3 (44 tests), EF Core InMemory |
-| **CI/CD** | GitHub Actions (build + test gate on PRs) |
-| **DevOps** | Docker, Docker Compose, Keycloak realm auto-import |
+| **Frontend** | React 19, Vite, Tailwind v4, shadcn/ui, MapLibre GL |
+| **Backend** | .NET 10, Clean Architecture, CQRS, Semantic Kernel |
+| **Data** | PostgreSQL 18, EF Core 10, OpenAPI |
+| **Auth** | Keycloak 26 (OIDC, PKCE, role-based vendor access) |
+| **AI** | Gemini 2.0 Flash via OpenRouter (OCR + RAG chat) |
+| **Standards** | GS1/EPCIS 2.0, OpenRouteService |
+| **Quality** | 44 xUnit tests, CI/CD gate on PRs |
 
 ---
 
-## Getting Started
-
-### Prerequisites
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Bun](https://bun.sh)
-- [Docker](https://www.docker.com/get-started)
-- Java 11+ (for OpenAPI Generator)
-
-### 1. Clone and start infrastructure
+## Quick Start
 
 ```bash
 git clone https://github.com/PianoNic/AutexisCase.git
 cd AutexisCase
-docker compose -f compose.dev.yml up -d
+docker compose -f compose.dev.yml up -d    # PostgreSQL + Keycloak
+dotnet run --project src/AutexisCase.API    # Backend
+cd src/AutexisCase.Frontend && bun install && bun run dev  # Frontend
 ```
 
-This starts **PostgreSQL** (port 5433) and **Keycloak** (port 8180) with pre-configured realm, demo users, and custom login theme.
+**Demo login:** `vendor-demo` / `demo1234` (vendor) or `user-demo` / `demo1234` (consumer)
 
-### 2. Configure secrets
-
-```bash
-cd src/AutexisCase.API
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=autexiscasedb-dev;Username=autexiscase;Password=devpassword"
-dotnet user-secrets set "Oidc:Authority" "http://localhost:8180/realms/autexiscase"
-dotnet user-secrets set "Oidc:ClientId" "autexiscase-app"
-dotnet user-secrets set "Oidc:RequireHttpsMetadata" "false"
-dotnet user-secrets set "OpenRouter:ApiKey" "<your-openrouter-api-key>"
-dotnet user-secrets set "OpenRouter:Model" "google/gemini-2.0-flash-001"
-dotnet user-secrets set "OpenRouteService:ApiKey" "<your-ors-api-key>"
-```
-
-### 3. Run
-
-```bash
-# Backend
-dotnet run --project src/AutexisCase.API
-
-# Frontend (in another terminal)
-cd src/AutexisCase.Frontend
-bun install
-bun run api:generate   # with backend running
-bun run dev
-```
-
-- App: http://localhost:5173
-- API Docs: http://localhost:5067/swagger
-- Keycloak Admin: http://localhost:8180
-
-### Demo Accounts
-
-| User | Password | Role | Access |
-|------|----------|------|--------|
-| `vendor-demo` | `demo1234` | Vendor | Full app + Vendor Portal |
-| `user-demo` | `demo1234` | Consumer | App only, no Vendor Portal |
+> Full setup instructions in [Testing & Setup](docs/testing-und-setup.md)
 
 ---
 
-## Testing
+## Docs
 
-```bash
-dotnet test src/AutexisCase.Tests
-```
-
-**44 unit tests** covering:
-- Query handlers (product, batch, blockchain, shelf life, anomaly, sustainability, alternatives)
-- Command handlers (scan, report)
-- RoutingService (caching, great circle arc, ORS response parsing, fallback strategies)
-- EpcisEventMapper (EPCIS 2.0 format validation, bizStep mapping)
-
-CI pipeline runs `dotnet test` on every PR — merging is blocked if tests fail.
+- **[Produktübersicht](docs/produktuebersicht.md)** — Problem, Zielgruppen, Nutzen, Roadmap
+- **[Anwenderguide](docs/anwenderguide.md)** — Scan, LOT, Karte, Chat, Meldungen
+- **[Vendorguide](docs/vendorguide.md)** — Dashboard, Rückrufe, Kundenmeldungen
+- **[Technik & Betrieb](docs/technik-und-betrieb.md)** — Architektur, EPCIS, Blockchain, CI/CD
+- **[Testing & Setup](docs/testing-und-setup.md)** — Setup, Demo-Accounts, Tests, API-Referenz
 
 ---
 
-## Seed Data (Demo Products)
+## Demo Products
 
-Pre-configured in `SeedData.cs` — survives DB drops:
-
-| GTIN | LOT | Product | Status | Journey |
-|------|-----|---------|--------|---------|
-| 7610848001015 | LX-2026-0142 | Swiss Dark Chocolate 72% (Lindt) | Warning | Ghana > Belgium > Switzerland (cold chain break at 24C) |
-| 7616500663992 | MSA17CN | Feine Milchschokolade Pistazie (Frey/Migros) | OK | Ivory Coast > Turkey > Switzerland (9 steps, real data) |
-| 7613035839427 | BM-2026-0087 | Bio Crunchy Muesli (Familia) | **Recall** | Metal fragments detected, BLV recall order |
+| Product | Status | Scenario |
+|---------|--------|----------|
+| Swiss Dark Chocolate 72% (Lindt) | Warning | Cold chain break at 24°C during transport |
+| Feine Milchschokolade Pistazie (Frey) | OK | Clean 9-step journey, real ingredient origins |
+| Bio Crunchy Müesli (Familia) | **Recall** | Metal fragments, BLV recall order |
 
 ---
 
-## API Endpoints (17 total)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/Product` | List all products |
-| `GET` | `/api/Product/{id}` | Full product with batches |
-| `GET` | `/api/Product/gtin/{gtin}` | Lookup by barcode (auto-fetches from Open Food Facts) |
-| `GET` | `/api/Product/batch/{id}` | Full batch with journey, temps, alerts |
-| `GET` | `/api/Product/batch/lookup` | Lookup batch by GTIN + LOT |
-| `GET` | `/api/Product/batch/{id}/route` | Route polylines (OpenRouteService) |
-| `GET` | `/api/Product/batch/{id}/blockchain` | SHA-256 hash chain |
-| `GET` | `/api/Product/batch/{id}/shelf-life` | Shelf life prediction |
-| `GET` | `/api/Product/batch/{id}/anomalies` | Anomaly detection |
-| `GET` | `/api/Product/batch/{id}/sustainability` | CO2 breakdown |
-| `GET` | `/api/Product/{id}/alternatives` | Product alternatives |
-| `POST` | `/api/Product/{id}/chat` | RAG product Q&A |
-| `POST` | `/api/Product/{id}/report` | Report product issue |
-| `POST` | `/api/Scan/{gtin}` | Record scan |
-| `POST` | `/api/Epcis/events` | Capture EPCIS events |
-| `GET` | `/api/Epcis/events` | Query EPCIS events |
-| `POST` | `/api/Ocr/lot` | AI LOT extraction |
-
----
-
-## Project Structure
-
-```
-src/
-  AutexisCase.Domain/          # Entities, Enums
-  AutexisCase.Application/     # Commands, Queries, DTOs, Behaviors
-  AutexisCase.Infrastructure/  # DbContext, Services, Migrations, SeedData
-  AutexisCase.API/             # Controllers, Middleware
-  AutexisCase.Frontend/        # React + Vite + Tailwind + MapLibre
-  AutexisCase.Tests/           # 44 xUnit tests
-config/
-  keycloak/                    # Realm + custom login theme
-```
+<p align="center"><sub>Built with .NET 10 · React 19 · PostgreSQL · Keycloak · Semantic Kernel</sub></p>
