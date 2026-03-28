@@ -111,9 +111,9 @@ function certIcon(name: string) {
   return CERT_ICONS[name] ?? <Award className="h-3.5 w-3.5 text-emerald-600" />;
 }
 
-function getStatusString(status: number | undefined): string {
-  if (status === 2) return "Warning";
-  if (status === 1) return "Current";
+function getStatusString(status: string | number | undefined): string {
+  if (status === "Warning" || status === 2) return "Warning";
+  if (status === "Current" || status === 1) return "Current";
   return "Completed";
 }
 
@@ -334,7 +334,7 @@ export default function ProductScreen() {
   const [alternatives, setAlternatives] = useState<ProductAlternativesDto | null>(null);
   const anomalies = anomalyResult?.anomalies ?? [];
 
-  const coldChainOk = batch ? batch.status === 0 : true;
+  const coldChainOk = batch ? batch.status === "Ok" || batch.status === 0 : true;
 
   useEffect(() => {
     if (!batch?.id) return;
