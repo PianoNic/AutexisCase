@@ -156,7 +156,8 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Frage stellen..."
-                  className="flex-1 rounded-full border bg-muted/50 px-3.5 py-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+                  className="flex-1 rounded-full border bg-muted/50 px-3.5 py-2 text-sm outline-none focus:ring-1 focus:ring-primary touch-auto"
+                  data-vaul-no-drag
                   disabled={loading}
                 />
                 <button
