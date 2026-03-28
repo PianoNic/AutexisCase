@@ -329,6 +329,14 @@ export default function ProductScreen() {
   const clampedDrawerProgress = Math.max(0, Math.min(1, drawerProgress));
   const compactJourney = clampedDrawerProgress > 0.35;
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
+  const drawerScrollRef = useRef<HTMLDivElement>(null);
+
+  // Scroll content to top when drawer collapses from full
+  useEffect(() => {
+    if (!isFullyOpen && drawerScrollRef.current) {
+      drawerScrollRef.current.scrollTop = 0;
+    }
+  }, [isFullyOpen]);
 
   // AI features (from API)
   const [shelfLife, setShelfLife] = useState<ShelfLifePredictionDto | null>(null);
@@ -986,6 +994,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
+            ref={drawerScrollRef}
             className={`flex-1 overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))] ${isFullyOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}
           >
             <div className="px-4 py-2 space-y-4">
