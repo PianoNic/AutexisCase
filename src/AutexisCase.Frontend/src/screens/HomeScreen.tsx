@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, ScanLine, Award, Package, AlertTriangle } from 'lucide-react'
 import { scanApi } from '@/api/client'
+import { useAppAuth } from '@/auth/use-app-auth'
 import type { ScanRecordDto } from '@/api/models/ScanRecordDto'
 import type { AlertDto } from '@/api/models/AlertDto'
 
@@ -13,11 +14,13 @@ const severityDot: Record<string, string> = {
 
 export default function HomeScreen() {
   const navigate = useNavigate()
+  const { accessToken } = useAppAuth()
   const [scans, setScans] = useState<ScanRecordDto[]>([])
   const [alerts, setAlerts] = useState<AlertDto[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = () => {
+    if (!accessToken) return
     Promise.all([
       scanApi.getRecentScans().catch(() => []),
       scanApi.getMyAlerts().catch(() => []),
@@ -30,12 +33,13 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchData()
-    // Refresh when page becomes visible (returning from product/scan)
-    const onFocus = () => fetchData()
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchData() })
-    return () => window.removeEventListener('focus', onFocus)
-  }, [])
+  }, [accessToken])
+
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) fetchData() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [accessToken])
 
   const okCount = scans.filter((s) => s.productStatus === 'Ok').length
   const problemScans = scans.filter((s) => s.productStatus === 'Warning' || s.productStatus === 'Recall')
