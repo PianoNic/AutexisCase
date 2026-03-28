@@ -16,6 +16,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import maplibregl from "maplibre-gl";
 import useEmblaCarousel from "embla-carousel-react";
+import { WheelGesturesPlugin } from "embla-carousel-wheel-gestures";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import { ArrowRight, Thermometer, ShieldCheck, Leaf, TreePine, Award, Sprout, Flag } from "lucide-react";
 import {
@@ -311,7 +312,7 @@ export default function ProductScreen() {
   const isScrollSnapping = useRef(false);
   const clickedRef = useRef(false);
   const initializedRef = useRef(false);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', containScroll: false, dragFree: false });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', containScroll: false, dragFree: false }, [WheelGesturesPlugin({ forceWheelAxis: 'x' })]);
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const isUserInteractingRef = useRef(false);
   const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
