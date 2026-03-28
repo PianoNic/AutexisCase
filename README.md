@@ -10,11 +10,29 @@
 
 ---
 
-## Was ist Track my Food?
+## Das Problem
 
-Konsumenten scannen einen Barcode, sehen die gesamte Reise ihres Lebensmittels auf einer interaktiven Karte, verifizieren die Lieferkette per Blockchain und können einem KI-Chatbot Fragen zum Produkt stellen. Vendoren erhalten ein rollenbasiertes Dashboard zur Qualitätskontrolle, Rückrufverwaltung und Bearbeitung von Kundenmeldungen.
+Lebensmittelskandale wie der Pferdefleischskandal (2013), Listerien-Rückrufe oder Ethylenoxid-Kontaminationen zeigen: Konsumenten haben heute kaum Möglichkeiten, die Herkunft und Sicherheit ihrer Lebensmittel selbst zu überprüfen. Lieferketten sind komplex, intransparent und oft erst nach einem Vorfall nachvollziehbar.
 
-**Kernfunktionen:** Barcode + LOT-Scan (KI-OCR) · cinematic Journey-Karte · Haltbarkeitsprognose · Kühlketten-Anomalieerkennung · CO₂-Nachhaltigkeitsanalyse · Blockchain-Verifizierung · RAG-Produkt-Chat · EPCIS 2.0 (GS1 Standart) · Vendor Portal mit RBAC
+## Unsere Lösung
+
+**Track my Food** macht die gesamte Lieferkette eines Produkts mit einem einzigen Barcode-Scan sichtbar — von der Ernte bis ins Regal. Konsumenten erhalten sofort Transparenz, Vendoren ein mächtiges Qualitäts-Dashboard.
+
+---
+
+## Kernfunktionen
+
+| Feature | Mehrwert |
+|---------|----------|
+| **Barcode + LOT-Scan (KI-OCR)** | Produkt und Charge in Sekunden identifizieren — auch handgeschriebene LOT-Nummern per KI-Vision |
+| **Cinematic Journey-Karte** | Interaktive MapLibre-Karte zeigt jeden Schritt der Lieferkette mit echten Routen |
+| **Haltbarkeitsprognose** | KI-gestützte Qualitätskurve mit Risikofaktoren und Konfidenzwerten |
+| **Kühlketten-Anomalieerkennung** | Automatische Erkennung von Temperaturspitzen mit Integritäts-Score |
+| **CO₂-Nachhaltigkeitsanalyse** | CO₂-Aufschlüsselung pro Lieferkettenschritt, Wasserfussabdruck, Transportdistanz |
+| **Blockchain-Verifizierung** | SHA-256-Hashkette — jeder Schritt kryptografisch mit dem vorherigen verknüpft |
+| **RAG-Produkt-Chat** | KI-Chatbot beantwortet Fragen basierend auf echten Produktdaten |
+| **EPCIS 2.0 (GS1-Standard)** | Lieferkettenevents im internationalen GS1-Format für Interoperabilität |
+| **Vendor Portal mit RBAC** | Rollenbasiertes Dashboard für Qualitätskontrolle, Rückrufe und Kundenmeldungen |
 
 ---
 
@@ -65,6 +83,12 @@ cd src/AutexisCase.Frontend && bun install && bun run dev  # Frontend
 | Swiss Dark Chocolate 72% (Lindt) | Warnung | Kühlkettenbruch bei 24°C während Transport |
 | Feine Milchschokolade Pistazie (Frey) | OK | 9-Schritte-Journey, echte Herkunftsdaten |
 | Bio Crunchy Müesli (Familia) | **Rückruf** | Metallfremdkörper, BLV-Rückrufanordnung |
+
+---
+
+## Vision
+
+> Track my Food ist erst der Grundstein. Die Plattform kann in vielen Bereichen weiterentwickelt werden — von der automatischen Überwachung ganzer Lieferketten über IoT-Sensorik (Temperatur, Feuchtigkeit, GPS) bis zur vollständigen Integration mit Retailern und Behörden. Ziel: **Jedes Produkt im Regal automatisch überwacht, jeder Rückruf in Echtzeit an betroffene Konsumenten kommuniziert.** Was heute ein Barcode-Scan ist, kann morgen ein lückenloses Sicherheitsnetz für die gesamte Lebensmittelbranche sein.
 
 ---
 
