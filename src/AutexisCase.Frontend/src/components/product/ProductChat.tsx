@@ -85,6 +85,8 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
             ref={sheetRef}
             className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background flex flex-col max-h-[85dvh] transition-transform duration-100"
             data-vaul-no-drag
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onTouchMoveCapture={(e) => e.stopPropagation()}
           >
             {/* Header */}

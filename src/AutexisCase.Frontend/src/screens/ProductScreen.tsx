@@ -762,7 +762,7 @@ export default function ProductScreen() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-background to-transparent" />
 
-        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-[51] flex items-center justify-between px-4 pt-12">
+        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-[51] flex items-center justify-between px-4 pt-8">
           <Button
             variant="outline"
             size="icon"
@@ -800,11 +800,11 @@ export default function ProductScreen() {
         <DrawerContent showOverlay={false} className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
           {events.length > 0 && (
             <div
-              className="pointer-events-none absolute inset-x-0 bottom-full pb-2 transition-all duration-300"
+              className="pointer-events-none absolute inset-x-0 bottom-full transition-all duration-300"
               style={{ opacity: isFullyOpen ? 0 : 1, transform: isFullyOpen ? 'scale(0.95) translateY(8px)' : 'scale(1) translateY(0)' }}
             >
               <div
-                className="pointer-events-auto overflow-hidden"
+                className="pointer-events-auto py-2 [overflow-x:clip]"
                 ref={emblaRef}
                 onPointerDownCapture={(event) => event.stopPropagation()}
               >
@@ -877,7 +877,11 @@ export default function ProductScreen() {
 
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{event.location}</span>
-                                <span>{formatEventDate(event.timestamp)}</span>
+                                {index === activeIndex && !expandedCard ? (
+                                  <span className="text-[10px] text-primary/70 font-medium animate-pulse">Tippen ↑</span>
+                                ) : (
+                                  <span>{formatEventDate(event.timestamp)}</span>
+                                )}
                               </div>
 
                               {/* Expanded detail content */}
@@ -954,8 +958,11 @@ export default function ProductScreen() {
             <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
-            {batch?.lotNumber && (
-              <p className="text-[10px] font-mono text-muted-foreground">LOT {batch.lotNumber}</p>
+            {(lot || batch?.lotNumber) && (
+              <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-0.5 w-fit">
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
+                <span className="text-[11px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
+              </span>
             )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
@@ -969,16 +976,16 @@ export default function ProductScreen() {
           <div
             className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
           >
-            <div className="px-4 space-y-4">
+            <div className="px-4 py-2 space-y-4">
               {/* Origin */}
               {product.origin && (
-                <div className="rounded-xl border px-3 py-2 flex items-center gap-3">
-                  <p className="text-[10px] text-muted-foreground shrink-0">Herkunft</p>
-                  <div className="flex items-center justify-between flex-1 text-xs font-semibold">
-                    {product.origin.split("→").map((step, i, arr) => (
+                <div className="rounded-xl border px-3 py-2">
+                  <p className="text-[10px] text-muted-foreground mb-1.5">Herkunft</p>
+                  <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
+                    {product.origin.split("→").map((step, i) => (
                       <span key={i} className="contents">
                         {i > 0 && <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />}
-                        <span>{step.trim()}</span>
+                        <span className="text-xs font-semibold">{step.trim()}</span>
                       </span>
                     ))}
                   </div>
@@ -1037,11 +1044,11 @@ export default function ProductScreen() {
                 </section>
               )}
 
-              {/* Shelf life */}
-              {shelfLife && <ShelfLifeCard prediction={shelfLife} />}
-
               {/* Anomaly detection */}
               {anomalyResult && <AnomalyCard result={anomalyResult} />}
+
+              {/* Shelf life */}
+              {shelfLife && <ShelfLifeCard prediction={shelfLife} />}
 
               {/* Ecological footprint */}
               {sustainability && <SustainabilityDetailCard analysis={sustainability} />}

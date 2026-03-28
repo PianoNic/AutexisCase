@@ -12,19 +12,12 @@ namespace AutexisCase.Application.Commands;
 [AllowAuthenticated]
 public record RecordScanCommand(string Gtin) : ICommand<Result<ScanRecordDto>>;
 
-public class RecordScanHandler(IAppDbContext dbContext, ICurrentUserService currentUserService, IOpenFoodFactsService openFoodFacts) : ICommandHandler<RecordScanCommand, Result<ScanRecordDto>>
+public class RecordScanHandler(IAppDbContext dbContext, ICurrentUserService currentUserService) : ICommandHandler<RecordScanCommand, Result<ScanRecordDto>>
 {
     public async ValueTask<Result<ScanRecordDto>> Handle(RecordScanCommand request, CancellationToken cancellationToken)
     {
         var product = await dbContext.Products.Include(p => p.Batches).FirstOrDefaultAsync(p => p.Gtin == request.Gtin, cancellationToken);
-
-        if (product is null)
-        {
-            product = await openFoodFacts.FetchProductAsync(request.Gtin, cancellationToken);
-            if (product is null) return Result.Failure<ScanRecordDto>("Product not found.");
-            dbContext.Products.Add(product);
-            await dbContext.SaveChangesAsync(cancellationToken);
-        }
+        if (product is null) return Result.Failure<ScanRecordDto>("Product not found.");
 
         var user = await dbContext.Users.FirstOrDefaultAsync(u => u.ExternalId == currentUserService.ExternalId, cancellationToken);
         if (user is null) return Result.Failure<ScanRecordDto>("User not found.");

@@ -34,8 +34,8 @@ public static class SeedData
                 {
                     Id = Guid.Parse("f1000000-0000-0000-0000-000000000001"),
                     LotNumber = "LX-2026-0142",
-                    Status = ProductStatus.Warning,
-                    RiskScore = 72,
+                    Status = ProductStatus.Recall,
+                    RiskScore = 95,
                     ShelfLifeDays = 365,
                     DaysRemaining = 120,
                     Co2Kg = 2.3m,
@@ -70,18 +70,18 @@ public static class SeedData
                         },
                         new JourneyEvent
                         {
-                            Step = "Lager", Location = "Zürich, Schweiz", Latitude = 47.3769, Longitude = 8.5417,
+                            Step = "Qualitätskontrolle", Location = "Zürich, Schweiz", Latitude = 47.3769, Longitude = 8.5417,
                             Timestamp = new DateTime(2026, 2, 22, 10, 0, 0, DateTimeKind.Utc),
-                            Status = JourneyStatus.Completed, Icon = "warehouse", Temperature = 16,
-                            Details = "Eingelagert im Zentrallager",
+                            Status = JourneyStatus.Warning, Icon = "warehouse", Temperature = 16,
+                            Details = "RÜCKRUF: Metallfremdkörper (Stahlspäne, ≤2mm) im Zentrallager bei Eingangsqualitätsprüfung nachgewiesen. Defekte Walzanlage in Brüsseler Verarbeitungsbetrieb. BLV-Meldung Nr. 2026-0298 erstattet.",
                             Co2Kg = 0.1m, WaterLiters = 10, Cost = 0.30m
                         },
                         new JourneyEvent
                         {
-                            Step = "Regal", Location = "Coop Baden, Schweiz", Latitude = 47.4734, Longitude = 8.3064,
-                            Timestamp = new DateTime(2026, 3, 1, 7, 0, 0, DateTimeKind.Utc),
-                            Status = JourneyStatus.Current, Icon = "store", Temperature = 20,
-                            Details = "Im Verkaufsregal platziert",
+                            Step = "Rückruf", Location = "Schweizweit", Latitude = 47.3769, Longitude = 8.5417,
+                            Timestamp = new DateTime(2026, 2, 25, 9, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Warning, Icon = "store", Temperature = 20,
+                            Details = "Sofortiger Verkaufsstopp und Rückruf aller betroffenen Chargen (LX-2026-0138 bis LX-2026-0145). Kunden werden gebeten, das Produkt nicht zu konsumieren und im Laden zurückzugeben.",
                             Co2Kg = 0.2m, WaterLiters = 5, Cost = 0.95m
                         }
                     ],
@@ -105,9 +105,17 @@ public static class SeedData
                     [
                         new Alert
                         {
+                            Type = AlertType.Recall, Severity = AlertSeverity.Critical,
+                            Title = "Produktrückruf — Metallfremdkörper",
+                            Description = "In der Charge LX-2026-0142 wurden Stahlspäne (≤2mm) nachgewiesen. Defekte Walzanlage im Verarbeitungsbetrieb Brüssel. Verletzungsgefahr beim Verzehr. Sofortiger Rückruf durch BLV angeordnet. Produkt NICHT konsumieren.",
+                            Timestamp = new DateTime(2026, 2, 22, 10, 0, 0, DateTimeKind.Utc),
+                            Read = false
+                        },
+                        new Alert
+                        {
                             Type = AlertType.ColdChain, Severity = AlertSeverity.Warning,
                             Title = "Kühlkettenunterbrechung",
-                            Description = "Temperatur stieg während des Transports auf 24°C. Diese Charge hat ein 72% Risiko für Qualitätsverlust basierend auf Temperaturabweichungen.",
+                            Description = "Temperatur stieg während des Transports auf 24°C für 3 Stunden. Qualitätsverlust möglich.",
                             Timestamp = new DateTime(2026, 2, 20, 9, 30, 0, DateTimeKind.Utc),
                             Read = false
                         }
@@ -295,7 +303,7 @@ public static class SeedData
                             Step = "Verarbeitung", Location = "Sachseln OW, Schweiz", Latitude = 46.8636, Longitude = 8.2328,
                             Timestamp = new DateTime(2026, 1, 28, 6, 0, 0, DateTimeKind.Utc),
                             Status = JourneyStatus.Warning, Icon = "factory", Temperature = 18,
-                            Details = "RÜCKRUF: Metallfremdkörper (Edelstahlsplitter, ≤3mm) in Produktionslinie erkannt. Defektes Sieb an Röstanlage. 12 Chargen betroffen. BLV-Meldung Nr. 2026-0341 erstattet.",
+                            Details = "RÜCKRUF: Salmonellen (S. Typhimurium) in Stichprobe der Haferflocken nachgewiesen. Kontamination wahrscheinlich durch unzureichende Erhitzung während des Röstvorgangs. BLV-Meldung Nr. 2026-0341 erstattet.",
                             Co2Kg = 0.3m, WaterLiters = 150, Cost = 1.50m
                         },
                         new JourneyEvent
@@ -303,15 +311,15 @@ public static class SeedData
                             Step = "Rückruf", Location = "Schweizweit", Latitude = 46.9480, Longitude = 7.4474,
                             Timestamp = new DateTime(2026, 2, 5, 9, 0, 0, DateTimeKind.Utc),
                             Status = JourneyStatus.Warning, Icon = "store", Temperature = 20,
-                            Details = "Sofortiger Verkaufsstopp und Rückruf aller betroffenen Chargen (BM-2026-0080 bis BM-2026-0091). Kunden werden gebeten, das Produkt nicht zu konsumieren und im Laden zurückzugeben.",
+                            Details = "Sofortiger Verkaufsstopp und Rückruf aller betroffenen Chargen (BM-2026-0080 bis BM-2026-0091) wegen Salmonellen-Kontamination. Kunden werden gebeten, das Produkt nicht zu konsumieren und im Laden zurückzugeben.",
                             Co2Kg = 0.4m, WaterLiters = 10, Cost = 3.20m
                         }
                     ],
                     PriceBreakdown =
                     [
-                        new PriceStep { Stage = "Rohstoffe", Amount = 0.80m, Percentage = 14.5m },
+                        new PriceStep { Stage = "Rohstoffe (Bio-Hafer, Dinkel)", Amount = 0.80m, Percentage = 14.5m },
                         new PriceStep { Stage = "Verarbeitung", Amount = 1.50m, Percentage = 27.3m },
-                        new PriceStep { Stage = "Rückruf-Kosten", Amount = 3.20m, Percentage = 58.2m }
+                        new PriceStep { Stage = "Rückruf & Krisenmanagement", Amount = 3.20m, Percentage = 58.2m }
                     ],
                     TemperatureLogs = [],
                     Alerts =
@@ -319,16 +327,16 @@ public static class SeedData
                         new Alert
                         {
                             Type = AlertType.Recall, Severity = AlertSeverity.Critical,
-                            Title = "Produktrückruf — Metallfremdkörper",
-                            Description = "In der Charge BM-2026-0087 wurden Edelstahlsplitter (≤3mm) nachgewiesen. Defektes Sieb an der Röstanlage. Verletzungsgefahr beim Verzehr. Sofortiger Rückruf durch BLV angeordnet. Produkt NICHT konsumieren.",
+                            Title = "Produktrückruf — Salmonellen",
+                            Description = "In der Charge BM-2026-0087 wurden Salmonella Typhimurium nachgewiesen. Erkrankungsrisiko durch Verzehr. Sofortiger Rückruf durch BLV angeordnet. Produkt NICHT konsumieren.",
                             Timestamp = new DateTime(2026, 2, 5, 8, 0, 0, DateTimeKind.Utc),
                             Read = false
                         },
                         new Alert
                         {
                             Type = AlertType.Recall, Severity = AlertSeverity.Critical,
-                            Title = "Qualitätskontrolle fehlgeschlagen",
-                            Description = "Metalldetektor hat bei Stichprobe der Charge BM-2026-0087 Edelstahlpartikel detektiert. Gesamte Tagesproduktion (12 Chargen) gesperrt. Interne Untersuchung läuft.",
+                            Title = "Mikrobiologische Kontamination bestätigt",
+                            Description = "Laboranalyse bestätigt Salmonellen-Kontamination in Charge BM-2026-0087. Unzureichende Erhitzung während Röstvorgang als Ursache identifiziert. Gesamte Tagesproduktion (12 Chargen) gesperrt.",
                             Timestamp = new DateTime(2026, 2, 3, 14, 0, 0, DateTimeKind.Utc),
                             Read = false
                         }

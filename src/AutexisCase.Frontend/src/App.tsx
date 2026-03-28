@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/auth/protected-route'
 import { LoginPage } from '@/pages/login'
 import { CallbackPage } from '@/pages/callback'
 import { BottomNav } from '@/components/layout/BottomNav'
+import { MobileOnlyOverlay } from '@/components/MobileOnlyOverlay'
 import HomeScreen from './screens/HomeScreen'
 import ScanScreen from './screens/ScanScreen'
 import LotCaptureScreen from './screens/LotCaptureScreen'
@@ -17,6 +18,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <MobileOnlyOverlay />
         <div className="mx-auto h-dvh w-screen max-w-md overflow-hidden bg-background text-foreground">
           <Routes>
             <Route path="/login" element={<LoginPage />} />
