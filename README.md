@@ -14,7 +14,7 @@
 
 Konsumenten scannen einen Barcode, sehen die gesamte Reise ihres Lebensmittels auf einer interaktiven Karte, verifizieren die Lieferkette per Blockchain und können einem KI-Chatbot Fragen zum Produkt stellen. Vendoren erhalten ein rollenbasiertes Dashboard zur Qualitätskontrolle, Rückrufverwaltung und Bearbeitung von Kundenmeldungen.
 
-**Kernfunktionen:** Barcode + LOT-Scan (KI-OCR) · cinematic Journey-Karte · Haltbarkeitsprognose · Kühlketten-Anomalieerkennung · CO₂-Nachhaltigkeitsanalyse · Blockchain-Verifizierung · RAG-Produkt-Chat · EPCIS 2.0 · Vendor Portal mit RBAC
+**Kernfunktionen:** Barcode + LOT-Scan (KI-OCR) · cinematic Journey-Karte · Haltbarkeitsprognose · Kühlketten-Anomalieerkennung · CO₂-Nachhaltigkeitsanalyse · Blockchain-Verifizierung · RAG-Produkt-Chat · EPCIS 2.0 (GS1 Standart) · Vendor Portal mit RBAC
 
 ---
 
