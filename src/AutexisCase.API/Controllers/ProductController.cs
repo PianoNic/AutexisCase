@@ -144,6 +144,16 @@ public class ProductController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpPost("{productId:guid}/report", Name = "CreateReport")]
+    [ProducesResponseType(typeof(ProductReportDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CreateReport(Guid productId, [FromQuery] Guid? batchId, [FromBody] CreateReportDto dto, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new CreateReportCommand(productId, batchId, dto.Reason, dto.Details), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
     [HttpGet("route", Name = "GetPointToPointRoute")]
     [ProducesResponseType(typeof(PointToPointRouteDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoute([FromQuery] double fromLat, [FromQuery] double fromLon, [FromQuery] double toLat, [FromQuery] double toLon, [FromQuery] string profile = "driving-hgv", CancellationToken cancellationToken = default)

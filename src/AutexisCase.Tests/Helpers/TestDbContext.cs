@@ -20,6 +20,7 @@ public class TestDbContext : DbContext, IAppDbContext
     public DbSet<ScanRecord> ScanRecords => Set<ScanRecord>();
     public DbSet<RouteCache> RouteCaches => Set<RouteCache>();
     public DbSet<EpcisEvent> EpcisEvents => Set<EpcisEvent>();
+    public DbSet<ProductReport> ProductReports => Set<ProductReport>();
 
     public static TestDbContext Create()
     {
