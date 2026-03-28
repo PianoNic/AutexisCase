@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { FeatureCollection, LineString } from "geojson";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -1060,7 +1061,7 @@ export default function ProductScreen() {
               ) : (
                 <button
                   onClick={() => setReportStep("reason")}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-semibold text-red-700 active:bg-red-100"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 mb-6 text-xs font-semibold text-red-700 active:bg-red-100"
                 >
                   <Flag className="h-3.5 w-3.5" />
                   Problem melden
@@ -1071,11 +1072,11 @@ export default function ProductScreen() {
         </DrawerContent>
       </Drawer>
 
-      {/* Report sheet — step 1: pick reason */}
-      {reportStep === "reason" && (
-        <div className="fixed inset-0 z-[60]" data-vaul-no-drag onPointerDownCapture={(e) => e.stopPropagation()} onTouchStartCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
+      {/* Report sheets — portaled to body to escape drawer event capture */}
+      {reportStep === "reason" && createPortal(
+        <div className="fixed inset-0 z-[200]">
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4" data-vaul-no-drag>
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
             <div className="text-center">
               <Flag className="h-6 w-6 text-red-500 mx-auto mb-1" />
@@ -1097,14 +1098,14 @@ export default function ProductScreen() {
               Abbrechen
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Report sheet — step 2: add details */}
-      {reportStep === "detail" && (
-        <div className="fixed inset-0 z-[60]" data-vaul-no-drag onPointerDownCapture={(e) => e.stopPropagation()} onTouchStartCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
+      {reportStep === "detail" && createPortal(
+        <div className="fixed inset-0 z-[200]">
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4" data-vaul-no-drag>
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
             <div className="text-center">
               <p className="text-base font-semibold">{reportReason}</p>
@@ -1116,8 +1117,7 @@ export default function ProductScreen() {
               placeholder="Was ist passiert?"
               rows={4}
               autoFocus
-              data-vaul-no-drag
-              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400 touch-auto"
+              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
             />
             <button
               onClick={() => {
@@ -1138,7 +1138,8 @@ export default function ProductScreen() {
               Zurück
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {product?.id && <ProductChat productId={product.id} batchId={batch?.id} />}
