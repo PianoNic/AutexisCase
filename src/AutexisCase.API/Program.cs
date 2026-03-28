@@ -70,7 +70,7 @@ builder.Services.AddSwaggerGen(options =>
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
+    builder.Services.AddCors(options => options.AddDefaultPolicy(policy => policy.SetIsOriginAllowed(_ => true).AllowAnyHeader().AllowAnyMethod().AllowCredentials()));
 }
 
 var app = builder.Build();

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MessageCircle, Send, X, Loader2 } from "lucide-react";
 import { productApi } from "@/api/client";
 
@@ -39,13 +40,13 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
     }
   };
 
-  return (
+  return createPortal(
     <>
       {/* FAB */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-4 right-4 z-[55] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+          className="fixed bottom-4 right-4 z-[100] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
         >
           <MessageCircle className="h-5 w-5" />
         </button>
@@ -54,7 +55,7 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
       {/* Chat sheet */}
       {open && (
         <div
-          className="fixed inset-0 z-[60]"
+          className="fixed inset-0 z-[100]"
           onPointerDownCapture={(e) => e.stopPropagation()}
           onTouchStartCapture={(e) => e.stopPropagation()}
           onTouchMoveCapture={(e) => e.stopPropagation()}
@@ -143,6 +144,7 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
           </div>
         </div>
       )}
-    </>
+    </>,
+    document.body,
   );
 }
