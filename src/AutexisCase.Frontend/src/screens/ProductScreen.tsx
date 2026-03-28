@@ -967,7 +967,16 @@ export default function ProductScreen() {
               )}
             </div>
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
-            {!coldChainOk && (
+            {batch?.status === 'Recall' && (
+              <div className="flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-3 py-2 text-red-800 mt-1">
+                <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-semibold">Produktrückruf</p>
+                  <p className="text-[10px]">Diese Charge wurde zurückgerufen. Bitte nicht konsumieren.</p>
+                </div>
+              </div>
+            )}
+            {batch?.status === 'Warning' && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
                 <Thermometer className="h-3.5 w-3.5 shrink-0" />
                 <p className="text-[10px]">Kühlketten-Abweichung erkannt.</p>
