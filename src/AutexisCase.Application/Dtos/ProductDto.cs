@@ -142,3 +142,23 @@ public record OcrResultDto(
     string? LotNumber,
     bool Success
 );
+
+public record BlockDto(
+    int Index,
+    string Hash,
+    string PreviousHash,
+    DateTime Timestamp,
+    string Step,
+    string Location,
+    string Carrier,
+    decimal? Temperature,
+    bool IsValid
+);
+
+public record BlockchainDto(
+    Guid BatchId,
+    string LotNumber,
+    string Gtin,
+    List<BlockDto> Blocks,
+    bool ChainValid
+);
