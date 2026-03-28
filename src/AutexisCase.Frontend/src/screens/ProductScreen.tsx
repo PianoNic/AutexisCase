@@ -298,7 +298,7 @@ export default function ProductScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
-  const [detailEvent, setDetailEvent] = useState<number | null>(null);
+  const [expandedCard, setExpandedCard] = useState(false);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
   const [reportReason, setReportReason] = useState("");
@@ -783,13 +783,16 @@ export default function ProductScreen() {
                           setActiveIndex(index);
                           return;
                         }
-                        // Open detail sheet for active card
-                        setDetailEvent(index);
+                        setExpandedCard(!expandedCard);
                       }}
                       className="shrink-0 cursor-pointer"
                       style={{
-                        flex: compactJourney ? '0 0 auto' : '0 0 280px',
-                        transition: 'flex-basis 300ms ease',
+                        flex: compactJourney
+                          ? '0 0 auto'
+                          : expandedCard && index === activeIndex
+                            ? '0 0 85vw'
+                            : '0 0 280px',
+                        transition: 'flex-basis 400ms cubic-bezier(0.4, 0, 0.2, 1)',
                       }}
                     >
                       <Card
@@ -801,10 +804,11 @@ export default function ProductScreen() {
                         }`}
                       >
                         <CardContent
-                          className="transition-all duration-300 overflow-hidden"
+                          className="transition-all duration-400 overflow-hidden"
                           style={{
-                            padding: compactJourney ? "4px 10px" : "16px",
-                            maxHeight: compactJourney ? "32px" : "120px",
+                            padding: compactJourney ? "4px 10px" : expandedCard && index === activeIndex ? "16px" : "16px",
+                            maxHeight: compactJourney ? "32px" : expandedCard && index === activeIndex ? "500px" : "100px",
+                            transition: "max-height 400ms cubic-bezier(0.4, 0, 0.2, 1), padding 300ms ease",
                           }}
                         >
                           {compactJourney ? (
@@ -818,6 +822,7 @@ export default function ProductScreen() {
                             </div>
                           ) : (
                             <div className="space-y-2">
+                              {/* Header */}
                               <div className="flex items-center gap-2.5">
                                 <div
                                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
@@ -833,6 +838,54 @@ export default function ProductScreen() {
                                 <span>{event.location}</span>
                                 <span>{formatEventDate(event.timestamp)}</span>
                               </div>
+
+                              {/* Expanded detail content */}
+                              {expandedCard && index === activeIndex && (() => {
+                                const prevEv = index > 0 ? events[index - 1] : null;
+                                const hrs = prevEv
+                                  ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEv.timestamp).getTime()) / 3600000)
+                                  : null;
+                                const desc = descriptions[event.id];
+
+                                return (
+                                  <div className="space-y-3 pt-1">
+                                    {/* Stats row */}
+                                    <div className="flex gap-2 flex-wrap">
+                                      {event.temperature != null && (
+                                        <span className="rounded-lg bg-blue-50 border border-blue-200 px-2 py-1 text-[10px] font-medium text-blue-700">
+                                          {event.temperature}°C
+                                        </span>
+                                      )}
+                                      {hrs != null && hrs > 0 && (
+                                        <span className="rounded-lg bg-muted px-2 py-1 text-[10px] font-medium">
+                                          {hrs < 24 ? `${hrs} Std` : `${Math.round(hrs / 24)} Tage`} seit letztem Schritt
+                                        </span>
+                                      )}
+                                      {event.co2Kg != null && (
+                                        <span className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[10px] font-medium text-emerald-700">
+                                          {event.co2Kg} kg CO₂
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* AI description */}
+                                    {desc ? (
+                                      <p className="text-[12px] leading-relaxed text-foreground/80">{desc}</p>
+                                    ) : (
+                                      <div className="space-y-1.5">
+                                        <div className="h-3 w-full rounded bg-muted animate-pulse" />
+                                        <div className="h-3 w-4/5 rounded bg-muted animate-pulse" />
+                                        <div className="h-3 w-3/5 rounded bg-muted animate-pulse" />
+                                      </div>
+                                    )}
+
+                                    {/* Coordinates */}
+                                    <p className="text-[10px] text-muted-foreground font-mono">
+                                      {event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}
+                                    </p>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           )}
                         </CardContent>
@@ -1048,119 +1101,6 @@ export default function ProductScreen() {
         </div>
       )}
 
-      {/* Journey step detail sheet */}
-      {detailEvent !== null && events[detailEvent] && (() => {
-        const event = events[detailEvent];
-        const prevEvent = detailEvent > 0 ? events[detailEvent - 1] : null;
-        const nextEvent = detailEvent < events.length - 1 ? events[detailEvent + 1] : null;
-        const desc = descriptions[event.id];
-        const timeSincePrev = prevEvent
-          ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEvent.timestamp).getTime()) / (1000 * 60 * 60))
-          : null;
-
-        return (
-          <div className="fixed inset-0 z-[60] flex flex-col">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDetailEvent(null)} />
-            <div className="relative mt-auto mx-auto w-full max-w-md max-h-[85vh] rounded-t-3xl bg-background overflow-y-auto animate-in slide-in-from-bottom duration-300">
-              <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-5 pt-4 pb-3 border-b">
-                <div className="mx-auto h-1 w-10 rounded-full bg-muted mb-3" />
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}>
-                    {detailEvent + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold">{event.step}</p>
-                    <p className="text-xs text-muted-foreground">{event.location}</p>
-                  </div>
-                  <button onClick={() => setDetailEvent(null)} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-muted">
-                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="px-5 py-4 space-y-5">
-                {/* Quick stats */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-muted/50 px-3 py-2 text-center">
-                    <p className="text-[10px] text-muted-foreground">Datum</p>
-                    <p className="text-xs font-semibold">{new Date(event.timestamp).toLocaleDateString("de-CH", { day: "numeric", month: "short", year: "2-digit" })}</p>
-                  </div>
-                  {event.temperature != null && (
-                    <div className="rounded-xl bg-muted/50 px-3 py-2 text-center">
-                      <p className="text-[10px] text-muted-foreground">Temperatur</p>
-                      <p className="text-xs font-semibold">{event.temperature}°C</p>
-                    </div>
-                  )}
-                  {timeSincePrev != null && (
-                    <div className="rounded-xl bg-muted/50 px-3 py-2 text-center">
-                      <p className="text-[10px] text-muted-foreground">Dauer</p>
-                      <p className="text-xs font-semibold">{timeSincePrev < 24 ? `${timeSincePrev} Std` : `${Math.round(timeSincePrev / 24)} Tage`}</p>
-                    </div>
-                  )}
-                  {event.co2Kg != null && (
-                    <div className="rounded-xl bg-muted/50 px-3 py-2 text-center">
-                      <p className="text-[10px] text-muted-foreground">CO₂</p>
-                      <p className="text-xs font-semibold">{event.co2Kg} kg</p>
-                    </div>
-                  )}
-                  {event.cost != null && (
-                    <div className="rounded-xl bg-muted/50 px-3 py-2 text-center">
-                      <p className="text-[10px] text-muted-foreground">Kosten</p>
-                      <p className="text-xs font-semibold">{event.cost} €</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* AI description */}
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">Was passiert hier?</p>
-                  {desc ? (
-                    <p className="text-[13px] leading-relaxed text-foreground/80">{desc}</p>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="h-3.5 w-full rounded bg-muted animate-pulse" />
-                      <div className="h-3.5 w-5/6 rounded bg-muted animate-pulse" />
-                      <div className="h-3.5 w-3/4 rounded bg-muted animate-pulse" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Coordinates */}
-                <div className="rounded-xl bg-muted/50 px-4 py-3 space-y-1 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Koordinaten</span>
-                    <span className="font-mono">{event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status</span>
-                    <span className="font-medium">{getStatusString(event.status)}</span>
-                  </div>
-                </div>
-
-                {/* Navigation between steps */}
-                <div className="flex gap-2">
-                  {prevEvent && (
-                    <button
-                      onClick={() => { setDetailEvent(detailEvent - 1); setActiveIndex(detailEvent - 1); }}
-                      className="flex-1 rounded-xl border py-2.5 text-xs font-medium active:bg-muted transition-colors"
-                    >
-                      ← {prevEvent.step}
-                    </button>
-                  )}
-                  {nextEvent && (
-                    <button
-                      onClick={() => { setDetailEvent(detailEvent + 1); setActiveIndex(detailEvent + 1); }}
-                      className="flex-1 rounded-xl border py-2.5 text-xs font-medium active:bg-muted transition-colors"
-                    >
-                      {nextEvent.step} →
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 }
