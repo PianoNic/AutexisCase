@@ -127,7 +127,7 @@ public static class SeedData
         var pistachioChocolate = new Product
         {
             Id = Guid.Parse("b2c3d4e5-f6a7-8901-bcde-f12345678901"),
-            Gtin = "7616500663992",
+            Gtin = "7616599663992",
             Name = "Feine Milchschokolade Pistazie",
             Brand = "Frey (Migros)",
             Category = "Süsswaren",
@@ -147,9 +147,9 @@ public static class SeedData
                 new Batch
                 {
                     Id = Guid.Parse("f2000000-0000-0000-0000-000000000002"),
-                    LotNumber = "MSA17CN",
-                    Status = ProductStatus.Ok,
-                    RiskScore = 12,
+                    LotNumber = "L2024456653",
+                    Status = ProductStatus.Recall,
+                    RiskScore = 92,
                     ShelfLifeDays = 365,
                     DaysRemaining = 280,
                     Co2Kg = 3.1m,
@@ -218,8 +218,8 @@ public static class SeedData
                         {
                             Step = "Transport", Location = "Autobahn A1, Schweiz", Latitude = 47.4200, Longitude = 8.2500,
                             Timestamp = new DateTime(2025, 11, 18, 4, 30, 0, DateTimeKind.Utc),
-                            Status = JourneyStatus.Completed, Icon = "truck", Temperature = 15,
-                            Details = "Migros-eigener LKW (Euro 6d, Erdgas/CNG). Nachtlieferung an Filiale. Temperaturlogger: konstant 14–16°C.",
+                            Status = JourneyStatus.Warning, Icon = "truck", Temperature = 28,
+                            Details = "KÜHLKETTEN-BRUCH: Kühlaggregat des LKW ausgefallen. Temperatur stieg auf 28°C für 3 Stunden. Schokolade wurde direkter Sonneneinstrahlung ausgesetzt. Fettreif und Qualitätsverlust wahrscheinlich.",
                             Co2Kg = 0.15m, WaterLiters = 2, Cost = 0.18m
                         },
                         new JourneyEvent
@@ -247,11 +247,33 @@ public static class SeedData
                         new TemperatureLog { Time = new DateTime(2025, 11, 10, 18, 0, 0, DateTimeKind.Utc), Temperature = 12, Location = "Kühltunnel Fabrik" },
                         new TemperatureLog { Time = new DateTime(2025, 11, 14, 8, 0, 0, DateTimeKind.Utc), Temperature = 16, Location = "Zentrallager Suhr" },
                         new TemperatureLog { Time = new DateTime(2025, 11, 18, 4, 30, 0, DateTimeKind.Utc), Temperature = 15, Location = "LKW Abfahrt Suhr" },
-                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 5, 15, 0, DateTimeKind.Utc), Temperature = 14, Location = "Autobahn A1" },
-                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 6, 0, 0, DateTimeKind.Utc), Temperature = 15, Location = "Ankunft Migros Baden" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 5, 0, 0, DateTimeKind.Utc), Temperature = 19, Location = "Autobahn A1 — Kühlung ausgefallen" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 5, 30, 0, DateTimeKind.Utc), Temperature = 24, Location = "Autobahn A1 — Temperaturanstieg" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 6, 0, 0, DateTimeKind.Utc), Temperature = 28, Location = "Autobahn A1 — Maximaltemperatur" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 6, 30, 0, DateTimeKind.Utc), Temperature = 26, Location = "Ankunft Migros Baden" },
                         new TemperatureLog { Time = new DateTime(2025, 11, 18, 7, 0, 0, DateTimeKind.Utc), Temperature = 20, Location = "Verkaufsregal" }
                     ],
-                    Alerts = []
+                    Alerts =
+                    [
+                        new Alert
+                        {
+                            Type = AlertType.ColdChain,
+                            Severity = AlertSeverity.Critical,
+                            Title = "Schwerer Kühlkettenbruch",
+                            Description = "Temperatur stieg auf 28°C für 3 Stunden während des Transports. Kühlaggregat ausgefallen auf der A1. Qualität der Schokolade beeinträchtigt — Fettreif und Geschmacksveränderung möglich.",
+                            Timestamp = new DateTime(2025, 11, 18, 5, 0, 0, DateTimeKind.Utc),
+                            Read = false
+                        },
+                        new Alert
+                        {
+                            Type = AlertType.Recall,
+                            Severity = AlertSeverity.Critical,
+                            Title = "Produktrückruf: Charge L2024456653",
+                            Description = "Aufgrund des Kühlkettenbruchs wird die gesamte Charge L2024456653 zurückgerufen. Betroffene Filialen: Migros Baden, Migros Brugg, Migros Wettingen. Bitte nicht konsumieren.",
+                            Timestamp = new DateTime(2025, 11, 18, 10, 0, 0, DateTimeKind.Utc),
+                            Read = false
+                        }
+                    ]
                 }
             ]
         };
