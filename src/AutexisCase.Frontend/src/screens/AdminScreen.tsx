@@ -12,10 +12,12 @@ import {
   CircleAlert,
   CheckCircle2,
   Flame,
+  Flag,
 } from 'lucide-react'
 import { scanApi } from '@/api/client'
 import type { AdminProductDto } from '@/api/models/AdminProductDto'
 import type { AlertDto } from '@/api/models/AlertDto'
+import type { ProductReportDto } from '@/api/models/ProductReportDto'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
@@ -53,6 +55,7 @@ export default function AdminScreen() {
   const navigate = useNavigate()
   const [products, setProducts] = useState<AdminProductDto[]>([])
   const [alerts, setAlerts] = useState<AlertDto[]>([])
+  const [reports, setReports] = useState<ProductReportDto[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = () => {
@@ -60,9 +63,11 @@ export default function AdminScreen() {
     Promise.all([
       scanApi.getAllProductsWithStatus().catch(() => []),
       scanApi.getAllAlerts().catch(() => []),
-    ]).then(([p, a]) => {
+      scanApi.getAllReports().catch(() => []),
+    ]).then(([p, a, r]) => {
       setProducts(p)
       setAlerts(a)
+      setReports(r)
       setLoading(false)
     })
   }
@@ -279,6 +284,58 @@ export default function AdminScreen() {
                       </div>
                     )
                   })}
+                </div>
+              )}
+            </section>
+
+            <Separator />
+
+            {/* ── User reports ── */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Flag className="h-4 w-4 text-red-500" />
+                  <p className="text-sm font-semibold">Kundenmeldungen</p>
+                </div>
+                {reports.length > 0 && (
+                  <Badge variant="secondary" className="text-[10px]">
+                    {reports.filter(r => !r.resolved).length} offen
+                  </Badge>
+                )}
+              </div>
+
+              {reports.length === 0 ? (
+                <div className="rounded-xl border p-4 text-center">
+                  <p className="text-sm text-muted-foreground">Keine Meldungen von Kunden.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {reports.map((r) => (
+                    <button
+                      key={r.id}
+                      className="w-full rounded-xl border p-3 space-y-1.5 text-left active:bg-accent transition-colors"
+                      onClick={() => navigate(`/product?id=${r.productId}`)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className={`h-2 w-2 rounded-full shrink-0 ${r.resolved ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                        <p className="text-sm font-medium flex-1 truncate">{r.reason}</p>
+                        <Badge variant="outline" className={`text-[9px] shrink-0 ${r.resolved ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'}`}>
+                          {r.resolved ? 'Gelöst' : 'Offen'}
+                        </Badge>
+                      </div>
+                      {r.details && (
+                        <p className="text-[11px] text-muted-foreground line-clamp-2 pl-4">{r.details}</p>
+                      )}
+                      <div className="flex items-center gap-3 pl-4">
+                        <p className="text-[10px] text-muted-foreground">{r.productName} · {r.productBrand}</p>
+                        {r.createdAt && (
+                          <p className="text-[10px] text-muted-foreground">
+                            {new Date(r.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </section>

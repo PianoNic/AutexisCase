@@ -223,3 +223,21 @@ public record BlockchainDto(
     List<BlockDto> Blocks,
     bool ChainValid
 );
+
+public record ProductReportDto(
+    Guid Id,
+    Guid ProductId,
+    string ProductName,
+    string ProductBrand,
+    string? ProductImageUrl,
+    Guid? BatchId,
+    string Reason,
+    string? Details,
+    bool Resolved,
+    DateTime CreatedAt
+);
+
+public record CreateReportDto(
+    string Reason,
+    string? Details
+);

@@ -51,4 +51,12 @@ public class ScanController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new GetAllProductsWithStatusQuery(), cancellationToken);
         return Ok(result.Value);
     }
+
+    [HttpGet("reports", Name = "GetAllReports")]
+    [ProducesResponseType(typeof(List<ProductReportDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllReports(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetAllReportsQuery(), cancellationToken);
+        return Ok(result.Value);
+    }
 }

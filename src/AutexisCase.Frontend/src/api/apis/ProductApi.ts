@@ -20,12 +20,14 @@ import type {
   BlockchainDto,
   ChatMessageDto,
   ChatResponseDto,
+  CreateReportDto,
   JourneyCoordinatesDto,
   JourneyEventDto,
   PointToPointRouteDto,
   ProblemDetails,
   ProductAlternativesDto,
   ProductDto,
+  ProductReportDto,
   ProductSummaryDto,
   RouteDto,
   ShelfLifePredictionDto,
@@ -42,6 +44,8 @@ import {
     ChatMessageDtoToJSON,
     ChatResponseDtoFromJSON,
     ChatResponseDtoToJSON,
+    CreateReportDtoFromJSON,
+    CreateReportDtoToJSON,
     JourneyCoordinatesDtoFromJSON,
     JourneyCoordinatesDtoToJSON,
     JourneyEventDtoFromJSON,
@@ -54,6 +58,8 @@ import {
     ProductAlternativesDtoToJSON,
     ProductDtoFromJSON,
     ProductDtoToJSON,
+    ProductReportDtoFromJSON,
+    ProductReportDtoToJSON,
     ProductSummaryDtoFromJSON,
     ProductSummaryDtoToJSON,
     RouteDtoFromJSON,
@@ -68,6 +74,12 @@ export interface AskProductRequest {
     productId: string;
     batchId?: string;
     chatMessageDto?: ChatMessageDto;
+}
+
+export interface CreateReportRequest {
+    productId: string;
+    batchId?: string;
+    createReportDto?: CreateReportDto;
 }
 
 export interface GetAnomalyDetectionRequest {
@@ -175,6 +187,52 @@ export class ProductApi extends runtime.BaseAPI {
      */
     async askProduct(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ChatResponseDto> {
         const response = await this.askProductRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async createReportRaw(requestParameters: CreateReportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductReportDto>> {
+        if (requestParameters['productId'] == null) {
+            throw new runtime.RequiredError(
+                'productId',
+                'Required parameter "productId" was null or undefined when calling createReport().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['batchId'] != null) {
+            queryParameters['batchId'] = requestParameters['batchId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{productId}/report`.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: CreateReportDtoToJSON(requestParameters['createReportDto']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProductReportDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async createReport(requestParameters: CreateReportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProductReportDto> {
+        const response = await this.createReportRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
