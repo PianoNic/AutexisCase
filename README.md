@@ -33,18 +33,24 @@ This starts a PostgreSQL instance on port `5433`.
 cd src/AutexisCase.API
 
 dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5433;Database=autexiscasedb-dev;Username=autexiscase;Password=devpassword"
-dotnet user-secrets set "Oidc:Authority" "https://auth.gaggao.com"
-dotnet user-secrets set "Oidc:ClientId" "<your-client-id>"
-dotnet user-secrets set "Oidc:RequireHttpsMetadata" "true"
-dotnet user-secrets set "Oidc:RedirectUri" "http://localhost:5173/callback"
-dotnet user-secrets set "Oidc:PostLogoutRedirectUri" "http://localhost:5173/"
+dotnet user-secrets set "Oidc:Authority" "http://localhost:8180/realms/autexiscase"
+dotnet user-secrets set "Oidc:ClientId" "autexiscase-app"
+dotnet user-secrets set "Oidc:RequireHttpsMetadata" "false"
 dotnet user-secrets set "OpenRouter:ApiKey" "<your-openrouter-api-key>"
 dotnet user-secrets set "OpenRouter:Model" "google/gemini-2.0-flash-001"
 dotnet user-secrets set "OpenRouteService:ApiKey" "<your-ors-api-key>"
 ```
 
-> Ask a team member for the OIDC Client ID, OpenRouter API key, and ORS API key.
 > Get a free ORS key at https://openrouteservice.org/dev/#/signup
+
+### Demo Accounts (Keycloak)
+
+| User | Password | Role | Access |
+|------|----------|------|--------|
+| `vendor-demo` | `demo1234` | Vendor | Vendor Portal + all features |
+| `user-demo` | `demo1234` | User | Consumer features only |
+
+Keycloak admin panel: `http://localhost:8180` (admin / admin)
 
 ### 4. Run the backend
 
@@ -133,20 +139,27 @@ Users can also enter the LOT number manually or skip the LOT step.
 | **Supply Chain** | GS1/EPCIS 2.0 event tracking (local storage) |
 | **Architecture** | Clean Architecture, CQRS (Mediator), role-based authorization |
 
-## OIDC Configuration
+## OIDC Configuration (Keycloak)
 
 | Setting | Value |
 |---|---|
-| Issuer | `https://auth.gaggao.com` |
-| Authorization URL | `https://auth.gaggao.com/authorize` |
-| Token URL | `https://auth.gaggao.com/api/oidc/token` |
-| Userinfo URL | `https://auth.gaggao.com/api/oidc/userinfo` |
-| PKCE | Enabled |
+| Realm | `autexiscase` |
+| Issuer | `http://localhost:8180/realms/autexiscase` |
+| Client ID | `autexiscase-app` |
+| PKCE | S256 |
+| Roles | `vendor` (Vendor Portal access), `user` (consumer) |
 
 ### Callback URLs
 
-- **Development**: `http://localhost:5173/callback`
-- **Production**: `https://<your-domain>/callback`
+- **Development**: `http://localhost:5173/*`
+- **Production**: `https://<your-domain>/*`
+
+### Keycloak Admin
+
+- URL: `http://localhost:8180`
+- Username: `admin`
+- Password: `admin`
+- Realm config auto-imported from `config/keycloak/realm-export.json`
 
 ## EPCIS Integration
 
