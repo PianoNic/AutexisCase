@@ -38,7 +38,7 @@ import { AlternativesCard } from "@/components/product/AlternativesCard";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
-const SNAP_POINTS = [0.08, 0.55, 0.995];
+const SNAP_POINTS = [0.04, 0.55, 0.995];
 type MapPoint = [number, number];
 type MapCamera = {
   longitude: number;
