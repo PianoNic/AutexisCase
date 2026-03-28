@@ -17,7 +17,7 @@ public class RecordScanHandlerTests
         db.Products.Add(product);
         await db.SaveChangesAsync();
 
-        var handler = new RecordScanHandler(db, new StubCurrentUserService(), new StubOpenFoodFactsService());
+        var handler = new RecordScanHandler(db, new StubCurrentUserService());
         var result = await handler.Handle(new RecordScanCommand("123"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -26,37 +26,15 @@ public class RecordScanHandlerTests
     }
 
     [Fact]
-    public async Task Fetches_product_from_off_when_not_in_db()
+    public async Task Returns_failure_when_product_not_in_db()
     {
         using var db = TestDbContext.Create();
         var user = new User { ExternalId = "test-external-id", Email = "t@t.com", DisplayName = "T" };
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var off = new StubOpenFoodFactsService
-        {
-            ProductToReturn = new Product { Gtin = "999", Name = "New", Brand = "OFF" }
-        };
-
-        var handler = new RecordScanHandler(db, new StubCurrentUserService(), off);
+        var handler = new RecordScanHandler(db, new StubCurrentUserService());
         var result = await handler.Handle(new RecordScanCommand("999"), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.Equal("New", result.Value!.ProductName);
-        Assert.Single(db.Products);
-        Assert.Single(db.ScanRecords);
-    }
-
-    [Fact]
-    public async Task Returns_failure_when_product_not_found_anywhere()
-    {
-        using var db = TestDbContext.Create();
-        var user = new User { ExternalId = "test-external-id", Email = "t@t.com", DisplayName = "T" };
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-
-        var handler = new RecordScanHandler(db, new StubCurrentUserService(), new StubOpenFoodFactsService());
-        var result = await handler.Handle(new RecordScanCommand("000"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Product not found.", result.Error);
@@ -70,7 +48,7 @@ public class RecordScanHandlerTests
         db.Products.Add(product);
         await db.SaveChangesAsync();
 
-        var handler = new RecordScanHandler(db, new StubCurrentUserService { ExternalId = "no-match" }, new StubOpenFoodFactsService());
+        var handler = new RecordScanHandler(db, new StubCurrentUserService { ExternalId = "no-match" });
         var result = await handler.Handle(new RecordScanCommand("123"), CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -89,7 +67,7 @@ public class RecordScanHandlerTests
         db.Products.Add(product);
         await db.SaveChangesAsync();
 
-        var handler = new RecordScanHandler(db, new StubCurrentUserService(), new StubOpenFoodFactsService());
+        var handler = new RecordScanHandler(db, new StubCurrentUserService());
         var result = await handler.Handle(new RecordScanCommand("123"), CancellationToken.None);
 
         Assert.True(result.IsSuccess);

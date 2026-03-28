@@ -958,10 +958,10 @@ export default function ProductScreen() {
             <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
-            {batch?.lotNumber && (
+            {(lot || batch?.lotNumber) && (
               <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-0.5 w-fit">
                 <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
-                <span className="text-[11px] font-mono text-foreground">{batch.lotNumber}</span>
+                <span className="text-[11px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
               </span>
             )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
