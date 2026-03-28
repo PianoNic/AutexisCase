@@ -23,14 +23,23 @@ public class UserSyncService(AutexisCaseDbContext dbContext) : IUserSyncService
                 Roles = []
             };
             dbContext.Users.Add(user);
+
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException)
+            {
+                // Race condition: user was created by another request
+                dbContext.Entry(user).State = EntityState.Detached;
+                user = await dbContext.Users.Include(u => u.Roles).FirstAsync(u => u.ExternalId == externalId, cancellationToken);
+            }
         }
-        else
-        {
-            user.Email = email;
-            user.DisplayName = displayName;
-            user.AvatarUrl = avatarUrl ?? user.AvatarUrl;
-            user.LastLoginAt = DateTime.UtcNow;
-        }
+
+        user.Email = email;
+        user.DisplayName = displayName;
+        user.AvatarUrl = avatarUrl ?? user.AvatarUrl;
+        user.LastLoginAt = DateTime.UtcNow;
 
         // Sync roles from OIDC provider
         if (roles is not null)
@@ -40,8 +49,8 @@ public class UserSyncService(AutexisCaseDbContext dbContext) : IUserSyncService
             {
                 user.Roles.Add(new UserRoleAssignment { UserId = user.Id, Role = role });
             }
-            // Remove roles no longer assigned
-            user.Roles.RemoveAll(r => !roles.Contains(r.Role));
+            var toRemove = user.Roles.Where(r => !roles.Contains(r.Role)).ToList();
+            foreach (var r in toRemove) user.Roles.Remove(r);
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
