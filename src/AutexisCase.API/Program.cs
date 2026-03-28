@@ -33,6 +33,7 @@ builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<Op
 builder.Services.AddHttpClient<RoutingService>();
 builder.Services.AddScoped<IRoutingService>(sp => sp.GetRequiredService<RoutingService>());
 builder.Services.AddScoped<IEpcisService, EpcisService>();
+builder.Services.AddSingleton<IChatService, ChatService>();
 
 
 // Mediator, Validation & Authorization

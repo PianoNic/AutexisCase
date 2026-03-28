@@ -155,6 +155,15 @@ public record BlockDto(
     bool IsValid
 );
 
+public record ChatMessageDto(
+    string Role,
+    string Content
+);
+
+public record ChatResponseDto(
+    string Answer
+);
+
 public record BlockchainDto(
     Guid BatchId,
     string LotNumber,

@@ -37,6 +37,7 @@ import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis,
 import { ShelfLifeCard } from "@/components/product/ShelfLifeCard";
 import { AlternativesCard } from "@/components/product/AlternativesCard";
 import { BlockchainCard } from "@/components/product/BlockchainCard";
+import { ProductChat } from "@/components/product/ProductChat";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
@@ -1025,6 +1026,8 @@ export default function ProductScreen() {
           </div>
         </div>
       )}
+
+      {batch?.id && <ProductChat batchId={batch.id} />}
     </div>
   );
 }

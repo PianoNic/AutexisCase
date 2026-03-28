@@ -17,6 +17,8 @@ import * as runtime from '../runtime';
 import type {
   BatchDto,
   BlockchainDto,
+  ChatMessageDto,
+  ChatResponseDto,
   JourneyCoordinatesDto,
   JourneyEventDto,
   PointToPointRouteDto,
@@ -30,6 +32,10 @@ import {
     BatchDtoToJSON,
     BlockchainDtoFromJSON,
     BlockchainDtoToJSON,
+    ChatMessageDtoFromJSON,
+    ChatMessageDtoToJSON,
+    ChatResponseDtoFromJSON,
+    ChatResponseDtoToJSON,
     JourneyCoordinatesDtoFromJSON,
     JourneyCoordinatesDtoToJSON,
     JourneyEventDtoFromJSON,
@@ -45,6 +51,11 @@ import {
     RouteDtoFromJSON,
     RouteDtoToJSON,
 } from '../models/index';
+
+export interface AskProductRequest {
+    batchId: string;
+    chatMessageDto?: ChatMessageDto;
+}
 
 export interface GetBatchBlockchainRequest {
     batchId: string;
@@ -91,6 +102,48 @@ export interface LookupBatchRequest {
  * 
  */
 export class ProductApi extends runtime.BaseAPI {
+
+    /**
+     */
+    async askProductRaw(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ChatResponseDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling askProduct().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}/chat`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ChatMessageDtoToJSON(requestParameters['chatMessageDto']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ChatResponseDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async askProduct(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ChatResponseDto> {
+        const response = await this.askProductRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      */
