@@ -10,6 +10,8 @@ index.ts
 models/AlertDto.ts
 models/AlertSeverity.ts
 models/AlertType.ts
+models/AlternativeProductDto.ts
+models/AnomalyDetectionResultDto.ts
 models/AppConfigDto.ts
 models/BatchDto.ts
 models/BatchSummaryDto.ts
@@ -17,6 +19,8 @@ models/BlockDto.ts
 models/BlockchainDto.ts
 models/ChatMessageDto.ts
 models/ChatResponseDto.ts
+models/Co2BreakdownItemDto.ts
+models/ColdChainAnomalyDto.ts
 models/CoordinateDto.ts
 models/CreateExampleCommand.ts
 models/ExampleDto.ts
@@ -28,12 +32,17 @@ models/OcrResultDto.ts
 models/PointToPointRouteDto.ts
 models/PriceStepDto.ts
 models/ProblemDetails.ts
+models/ProductAlternativesDto.ts
 models/ProductDto.ts
 models/ProductStatus.ts
 models/ProductSummaryDto.ts
+models/QualityDataPointDto.ts
+models/RiskFactorDto.ts
 models/RouteDto.ts
 models/RouteSegmentDto.ts
 models/ScanRecordDto.ts
+models/ShelfLifePredictionDto.ts
+models/SustainabilityAnalysisDto.ts
 models/TemperatureLogDto.ts
 models/UserDto.ts
 models/UserRole.ts

@@ -143,6 +143,50 @@ public record OcrResultDto(
     bool Success
 );
 
+public record ShelfLifePredictionDto(
+    int PredictedDaysRemaining,
+    double Confidence,
+    List<QualityDataPointDto> QualityProgression,
+    List<RiskFactorDto> RiskFactors,
+    string Recommendation
+);
+
+public record QualityDataPointDto(int Day, double Quality, string Label);
+
+public record RiskFactorDto(string Id, string Factor, string Impact, string Description);
+
+public record AnomalyDetectionResultDto(
+    List<ColdChainAnomalyDto> Anomalies,
+    string OverallRisk,
+    int ChainIntegrityScore
+);
+
+public record ColdChainAnomalyDto(
+    string Id, string Severity, string Type, string Title, string Description,
+    decimal MinTemp, decimal MaxTemp, string Duration, int AffectedQualityPercent
+);
+
+public record SustainabilityAnalysisDto(
+    List<Co2BreakdownItemDto> Co2Breakdown,
+    decimal TotalCo2Kg,
+    int ComparisonToAverage,
+    decimal WaterFootprintL,
+    int TransportDistanceKm,
+    string PackagingScore,
+    List<string> EcoTips
+);
+
+public record Co2BreakdownItemDto(string Id, string Stage, decimal Co2Kg, int Percentage);
+
+public record ProductAlternativesDto(
+    List<AlternativeProductDto> Alternatives
+);
+
+public record AlternativeProductDto(
+    Guid Id, string Name, string Brand, string? ImageUrl, string? NutriScore,
+    decimal Co2Kg, List<string> ImprovementTags
+);
+
 public record BlockDto(
     int Index,
     string Hash,

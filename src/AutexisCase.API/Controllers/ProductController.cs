@@ -104,6 +104,46 @@ public class ProductController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
+    [HttpGet("batch/{batchId:guid}/shelf-life", Name = "GetShelfLifePrediction")]
+    [ProducesResponseType(typeof(ShelfLifePredictionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetShelfLifePrediction(Guid batchId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetShelfLifePredictionQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("batch/{batchId:guid}/anomalies", Name = "GetAnomalyDetection")]
+    [ProducesResponseType(typeof(AnomalyDetectionResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAnomalyDetection(Guid batchId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetAnomalyDetectionQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("batch/{batchId:guid}/sustainability", Name = "GetSustainability")]
+    [ProducesResponseType(typeof(SustainabilityAnalysisDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSustainability(Guid batchId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetSustainabilityQuery(batchId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("{productId:guid}/alternatives", Name = "GetProductAlternatives")]
+    [ProducesResponseType(typeof(ProductAlternativesDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProductAlternatives(Guid productId, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetProductAlternativesQuery(productId), cancellationToken);
+        if (result.IsFailure) return NotFound(result.Error);
+        return Ok(result.Value);
+    }
+
     [HttpGet("route", Name = "GetPointToPointRoute")]
     [ProducesResponseType(typeof(PointToPointRouteDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRoute([FromQuery] double fromLat, [FromQuery] double fromLon, [FromQuery] double toLat, [FromQuery] double toLon, [FromQuery] string profile = "driving-hgv", CancellationToken cancellationToken = default)

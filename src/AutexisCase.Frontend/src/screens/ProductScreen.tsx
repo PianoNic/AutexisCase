@@ -33,8 +33,13 @@ import { productApi } from "@/api/client";
 import type { ProductDto } from "@/api/models/ProductDto";
 import type { BatchDto } from "@/api/models/BatchDto";
 import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
-import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from "@/data/mock-ai";
+import type { ShelfLifePredictionDto } from "@/api/models/ShelfLifePredictionDto";
+import type { AnomalyDetectionResultDto } from "@/api/models/AnomalyDetectionResultDto";
+import type { SustainabilityAnalysisDto } from "@/api/models/SustainabilityAnalysisDto";
+import type { ProductAlternativesDto } from "@/api/models/ProductAlternativesDto";
 import { ShelfLifeCard } from "@/components/product/ShelfLifeCard";
+import { AnomalyCard } from "@/components/product/AnomalyCard";
+import { SustainabilityDetailCard } from "@/components/product/SustainabilityDetailCard";
 import { AlternativesCard } from "@/components/product/AlternativesCard";
 import { BlockchainCard } from "@/components/product/BlockchainCard";
 import { ProductChat } from "@/components/product/ProductChat";
@@ -322,15 +327,26 @@ export default function ProductScreen() {
   const compactJourney = clampedDrawerProgress > 0.35;
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
 
-  // AI features (mock data)
-  const productId = product?.id ?? "";
-  const shelfLife = getShelfLifePrediction(productId);
-  const anomalyResult = getAnomalyDetection(productId);
-  const sustainability = getSustainabilityAnalysis(productId);
-  const alternatives = getProductAlternatives(productId);
+  // AI features (from API)
+  const [shelfLife, setShelfLife] = useState<ShelfLifePredictionDto | null>(null);
+  const [anomalyResult, setAnomalyResult] = useState<AnomalyDetectionResultDto | null>(null);
+  const [sustainability, setSustainability] = useState<SustainabilityAnalysisDto | null>(null);
+  const [alternatives, setAlternatives] = useState<ProductAlternativesDto | null>(null);
   const anomalies = anomalyResult?.anomalies ?? [];
 
   const coldChainOk = batch ? batch.status === 0 : true;
+
+  useEffect(() => {
+    if (!batch?.id) return;
+    productApi.getShelfLifePrediction({ batchId: batch.id }).then(setShelfLife).catch(() => {});
+    productApi.getAnomalyDetection({ batchId: batch.id }).then(setAnomalyResult).catch(() => {});
+    productApi.getSustainability({ batchId: batch.id }).then(setSustainability).catch(() => {});
+  }, [batch?.id]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    productApi.getProductAlternatives({ productId: product.id }).then(setAlternatives).catch(() => {});
+  }, [product?.id]);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -912,34 +928,11 @@ export default function ProductScreen() {
               {/* Shelf life */}
               {shelfLife && <ShelfLifeCard prediction={shelfLife} />}
 
-              {/* Anomalies */}
-              {anomalies.length > 0 && (
-                <section>
-                  {anomalies.map((a) => (
-                    <div key={a.id} className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-amber-800">
-                      <p className="text-xs font-semibold">{a.title}</p>
-                      <p className="text-[11px] mt-0.5">{a.description}</p>
-                    </div>
-                  ))}
-                </section>
-              )}
+              {/* Anomaly detection */}
+              {anomalyResult && <AnomalyCard result={anomalyResult} />}
 
               {/* Ecological footprint */}
-              {sustainability && (
-                <section>
-                  <p className="text-sm font-semibold mb-2">Ökologischer Fußabdruck</p>
-                  <div className="space-y-1.5 text-[13px]">
-                    <NutritionRow label="CO₂ pro 100 g" value={`${sustainability.totalCo2Kg} kg`} />
-                    <NutritionRow label="Wasserverbrauch" value={`${sustainability.waterFootprintL} L`} />
-                    <NutritionRow label="Transportweg" value={`${sustainability.transportDistanceKm.toLocaleString()} km`} />
-                  </div>
-                  <p className={`text-xs mt-1.5 ${sustainability.comparisonToAverage < 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                    {sustainability.comparisonToAverage < 0
-                      ? `${Math.abs(sustainability.comparisonToAverage)}% unter Durchschnitt`
-                      : `${sustainability.comparisonToAverage}% über Durchschnitt`}
-                  </p>
-                </section>
-              )}
+              {sustainability && <SustainabilityDetailCard analysis={sustainability} />}
 
               {/* Blockchain verification */}
               {batch?.id && <BlockchainCard batchId={batch.id} />}
