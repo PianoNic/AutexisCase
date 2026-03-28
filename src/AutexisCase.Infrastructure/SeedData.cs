@@ -116,7 +116,139 @@ public static class SeedData
             ]
         };
 
-        dbContext.Products.Add(chocolate);
+        var pistachioChocolate = new Product
+        {
+            Id = Guid.Parse("b2c3d4e5-f6a7-8901-bcde-f12345678901"),
+            Gtin = "7616500663992",
+            Name = "Feine Milchschokolade Pistazie",
+            Brand = "Frey (Migros)",
+            Category = "Süsswaren",
+            Weight = "100g",
+            Origin = "Elfenbeinküste → Türkei → Schweiz",
+            Certifications = ["Rainforest Alliance", "FSC Mix"],
+            NutriScore = "E",
+            NovaGroup = 4,
+            EcoScore = "C",
+            Nutrition = new Nutrition
+            {
+                EnergyKcal = 563, Fat = 36, SaturatedFat = 17, Carbs = 50,
+                Sugars = 48, Fiber = 3.4m, Protein = 8.1m, Salt = 0.20m
+            },
+            Batches =
+            [
+                new Batch
+                {
+                    Id = Guid.Parse("f2000000-0000-0000-0000-000000000002"),
+                    LotNumber = "MSA17CN",
+                    Status = ProductStatus.Ok,
+                    RiskScore = 12,
+                    ShelfLifeDays = 365,
+                    DaysRemaining = 280,
+                    Co2Kg = 3.1m,
+                    WaterLiters = 2400m,
+                    ProductionDate = new DateTime(2025, 11, 15, 0, 0, 0, DateTimeKind.Utc),
+                    ExpiryDate = new DateTime(2026, 11, 15, 0, 0, 0, DateTimeKind.Utc),
+                    JourneyEvents =
+                    [
+                        new JourneyEvent
+                        {
+                            Step = "Kakao-Ernte", Location = "Necaayo-Kooperative, Elfenbeinküste", Latitude = 6.8276, Longitude = -5.2893,
+                            Timestamp = new DateTime(2025, 8, 20, 6, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "sprout", Temperature = 30,
+                            Details = "Kakaobohnen geerntet von der Necaayo-Kooperative – Delica/Chocolat Frey bezieht seit 2012 exklusiv ~1'500 Tonnen/Jahr von dieser Partnerschaft. Rainforest Alliance zertifiziert seit 2013. Fermentation 6 Tage, Sonnentrocknung 7 Tage.",
+                            Co2Kg = 0.25m, WaterLiters = 1200, Cost = 0.38m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Pistazien-Ernte", Location = "Gaziantep, Türkei", Latitude = 37.0662, Longitude = 37.3833,
+                            Timestamp = new DateTime(2025, 9, 5, 7, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "sprout", Temperature = 26,
+                            Details = "Antep-Pistazien (7% Anteil) aus der Region Gaziantep – 85% der türkischen Pistazienproduktion. Türkei produzierte 2024/25 rekordhohe 385'000 Tonnen. Schälung, Sortierung und Röstung vor Ort. Export via Mersin nach Europa.",
+                            Co2Kg = 0.15m, WaterLiters = 350, Cost = 0.85m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Haselnuss-Beschaffung", Location = "Giresun, Schwarzmeerregion, Türkei", Latitude = 40.9128, Longitude = 38.3895,
+                            Timestamp = new DateTime(2025, 9, 12, 8, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "sprout", Temperature = 22,
+                            Details = "Haselnüsse (Giresun-Qualität) aus der Schwarzmeerregion – Türkei liefert 70% der Weltproduktion. Mandeln aus Valencia, Spanien via Konsolidierung Istanbul. Röstung und Mahlung vor Verschiffung.",
+                            Co2Kg = 0.20m, WaterLiters = 280, Cost = 0.55m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Seetransport", Location = "Mittelmeer (Abidjan → Mersin → Genua)", Latitude = 38.5, Longitude = 18.0,
+                            Timestamp = new DateTime(2025, 10, 1, 12, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "ship", Temperature = 18,
+                            Details = "Kakao ab Hafen Abidjan, Nüsse ab Mersin/Istanbul – Konsolidierung in Genua. 12 Tage Seetransport. Temperaturkontrollierter 20ft-Container (max. 18°C). Weiter per Bahn nach Schweiz.",
+                            Co2Kg = 0.60m, WaterLiters = 30, Cost = 0.25m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Schweizer Milch", Location = "Emmi, Luzern/Konolfingen", Latitude = 46.9500, Longitude = 7.7333,
+                            Timestamp = new DateTime(2025, 10, 20, 5, 30, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "milk", Temperature = 4,
+                            Details = "Vollmilch- und Magermilchpulver von der Zentralschweizer Milchvereinigung (Emmi-Vorgänger, gegr. 1907). 62 Genossenschaften, 1'768 Milchbauern. Sprühtrocknung in Konolfingen. 100% Schweizer Milch.",
+                            Co2Kg = 0.35m, WaterLiters = 450, Cost = 0.42m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Verarbeitung", Location = "Delica/Chocolat Frey, Buchs AG", Latitude = 47.3875, Longitude = 8.0814,
+                            Timestamp = new DateTime(2025, 11, 10, 6, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "factory", Temperature = 20,
+                            Details = "Conchierung (72h) in der grössten Schweizer Schokoladenfabrik. Pralinenfüllung mit gemahlenen Antep-Pistazien, Mandeln und Haselnüssen. CO₂-reduzierter Betrieb dank Fernwärme (Energieverbrauch um 25% gesenkt). Qualitätskontrolle bestanden.",
+                            Co2Kg = 0.90m, WaterLiters = 60, Cost = 1.10m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Zentrallager", Location = "MVB Suhr AG, Schweiz", Latitude = 47.3714, Longitude = 8.0803,
+                            Timestamp = new DateTime(2025, 11, 14, 8, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "warehouse", Temperature = 16,
+                            Details = "Migros Verteilbetrieb AG Suhr – grösstes Logistikzentrum der Schweiz. Versorgt 600+ Filialen und 300 Migrolino-Shops. WITRON OPM-System: 315'000+ Gebinde täglich. Einlagerung bei 16°C.",
+                            Co2Kg = 0.10m, WaterLiters = 5, Cost = 0.20m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Transport", Location = "Autobahn A1, Schweiz", Latitude = 47.4200, Longitude = 8.2500,
+                            Timestamp = new DateTime(2025, 11, 18, 4, 30, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "truck", Temperature = 15,
+                            Details = "Migros-eigener LKW (Euro 6d, Erdgas/CNG). Nachtlieferung an Filiale. Temperaturlogger: konstant 14–16°C.",
+                            Co2Kg = 0.15m, WaterLiters = 2, Cost = 0.18m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Regal", Location = "Migros Baden, Schweiz", Latitude = 47.4734, Longitude = 8.3064,
+                            Timestamp = new DateTime(2025, 11, 18, 7, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Current, Icon = "store", Temperature = 20,
+                            Details = "Im Verkaufsregal platziert (Gang 4, Süsswaren). Regaltemperatur 20°C. MHD: 15.11.2026.",
+                            Co2Kg = 0.40m, WaterLiters = 3, Cost = 1.57m
+                        }
+                    ],
+                    PriceBreakdown =
+                    [
+                        new PriceStep { Stage = "Rohstoffe (Kakao, Nüsse, Milch)", Amount = 2.20m, Percentage = 40.0m },
+                        new PriceStep { Stage = "Verarbeitung (Chocolat Frey)", Amount = 1.10m, Percentage = 20.0m },
+                        new PriceStep { Stage = "Transport & Logistik", Amount = 0.43m, Percentage = 7.8m },
+                        new PriceStep { Stage = "Migros Marge & Betrieb", Amount = 1.77m, Percentage = 32.2m }
+                    ],
+                    TemperatureLogs =
+                    [
+                        new TemperatureLog { Time = new DateTime(2025, 10, 1, 12, 0, 0, DateTimeKind.Utc), Temperature = 18, Location = "Container Istanbul" },
+                        new TemperatureLog { Time = new DateTime(2025, 10, 5, 12, 0, 0, DateTimeKind.Utc), Temperature = 17, Location = "Mittelmeer" },
+                        new TemperatureLog { Time = new DateTime(2025, 10, 9, 8, 0, 0, DateTimeKind.Utc), Temperature = 18, Location = "Hafen Genua" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 10, 6, 0, 0, DateTimeKind.Utc), Temperature = 20, Location = "Fabrik Buchs AG" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 10, 18, 0, 0, DateTimeKind.Utc), Temperature = 12, Location = "Kühltunnel Fabrik" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 14, 8, 0, 0, DateTimeKind.Utc), Temperature = 16, Location = "Zentrallager Suhr" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 4, 30, 0, DateTimeKind.Utc), Temperature = 15, Location = "LKW Abfahrt Suhr" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 5, 15, 0, DateTimeKind.Utc), Temperature = 14, Location = "Autobahn A1" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 6, 0, 0, DateTimeKind.Utc), Temperature = 15, Location = "Ankunft Migros Baden" },
+                        new TemperatureLog { Time = new DateTime(2025, 11, 18, 7, 0, 0, DateTimeKind.Utc), Temperature = 20, Location = "Verkaufsregal" }
+                    ],
+                    Alerts = []
+                }
+            ]
+        };
+
+        dbContext.Products.AddRange(chocolate, pistachioChocolate);
         await dbContext.SaveChangesAsync();
     }
 }

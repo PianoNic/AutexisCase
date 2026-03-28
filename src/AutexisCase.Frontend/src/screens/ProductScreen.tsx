@@ -34,10 +34,16 @@ import { productApi, getJourneyEventDescription } from "@/api/client";
 import type { ProductDto } from "@/api/models/ProductDto";
 import type { BatchDto } from "@/api/models/BatchDto";
 import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
-import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from "@/data/mock-ai";
+import type { ShelfLifePredictionDto } from "@/api/models/ShelfLifePredictionDto";
+import type { AnomalyDetectionResultDto } from "@/api/models/AnomalyDetectionResultDto";
+import type { SustainabilityAnalysisDto } from "@/api/models/SustainabilityAnalysisDto";
+import type { ProductAlternativesDto } from "@/api/models/ProductAlternativesDto";
 import { ShelfLifeCard } from "@/components/product/ShelfLifeCard";
+import { AnomalyCard } from "@/components/product/AnomalyCard";
+import { SustainabilityDetailCard } from "@/components/product/SustainabilityDetailCard";
 import { AlternativesCard } from "@/components/product/AlternativesCard";
 import { BlockchainCard } from "@/components/product/BlockchainCard";
+import { ProductChat } from "@/components/product/ProductChat";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
@@ -106,9 +112,9 @@ function certIcon(name: string) {
   return CERT_ICONS[name] ?? <Award className="h-3.5 w-3.5 text-emerald-600" />;
 }
 
-function getStatusString(status: number | undefined): string {
-  if (status === 2) return "Warning";
-  if (status === 1) return "Current";
+function getStatusString(status: string | number | undefined): string {
+  if (status === "Warning" || status === 2) return "Warning";
+  if (status === "Current" || status === 1) return "Current";
   return "Completed";
 }
 
@@ -324,15 +330,26 @@ export default function ProductScreen() {
   const compactJourney = clampedDrawerProgress > 0.35;
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
 
-  // AI features (mock data)
-  const productId = product?.id ?? "";
-  const shelfLife = getShelfLifePrediction(productId);
-  const anomalyResult = getAnomalyDetection(productId);
-  const sustainability = getSustainabilityAnalysis(productId);
-  const alternatives = getProductAlternatives(productId);
+  // AI features (from API)
+  const [shelfLife, setShelfLife] = useState<ShelfLifePredictionDto | null>(null);
+  const [anomalyResult, setAnomalyResult] = useState<AnomalyDetectionResultDto | null>(null);
+  const [sustainability, setSustainability] = useState<SustainabilityAnalysisDto | null>(null);
+  const [alternatives, setAlternatives] = useState<ProductAlternativesDto | null>(null);
   const anomalies = anomalyResult?.anomalies ?? [];
 
-  const coldChainOk = batch ? batch.status === 0 : true;
+  const coldChainOk = batch ? batch.status === "Ok" || batch.status === 0 : true;
+
+  useEffect(() => {
+    if (!batch?.id) return;
+    productApi.getShelfLifePrediction({ batchId: batch.id }).then(setShelfLife).catch(() => {});
+    productApi.getAnomalyDetection({ batchId: batch.id }).then(setAnomalyResult).catch(() => {});
+    productApi.getSustainability({ batchId: batch.id }).then(setSustainability).catch(() => {});
+  }, [batch?.id]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    productApi.getProductAlternatives({ productId: product.id }).then(setAlternatives).catch(() => {});
+  }, [product?.id]);
 
   useEffect(() => {
     activeIndexRef.current = activeIndex;
@@ -730,7 +747,7 @@ export default function ProductScreen() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-background to-transparent" />
 
-        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-20 flex items-center justify-between px-4 pt-12">
+        <div className="pointer-events-auto absolute left-0 right-0 top-0 z-[51] flex items-center justify-between px-4 pt-12">
           <Button
             variant="outline"
             size="icon"
@@ -922,6 +939,9 @@ export default function ProductScreen() {
             <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
+            {batch?.lotNumber && (
+              <p className="text-[10px] font-mono text-muted-foreground">LOT {batch.lotNumber}</p>
+            )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
@@ -932,9 +952,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className={`flex-1 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
-              isFullyOpen ? "overflow-y-auto" : "overflow-hidden"
-            }`}
+            className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
           >
             <div className="px-4 space-y-4">
               {/* Origin */}
@@ -1007,34 +1025,11 @@ export default function ProductScreen() {
               {/* Shelf life */}
               {shelfLife && <ShelfLifeCard prediction={shelfLife} />}
 
-              {/* Anomalies */}
-              {anomalies.length > 0 && (
-                <section>
-                  {anomalies.map((a) => (
-                    <div key={a.id} className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-amber-800">
-                      <p className="text-xs font-semibold">{a.title}</p>
-                      <p className="text-[11px] mt-0.5">{a.description}</p>
-                    </div>
-                  ))}
-                </section>
-              )}
+              {/* Anomaly detection */}
+              {anomalyResult && <AnomalyCard result={anomalyResult} />}
 
               {/* Ecological footprint */}
-              {sustainability && (
-                <section>
-                  <p className="text-sm font-semibold mb-2">Ökologischer Fußabdruck</p>
-                  <div className="space-y-1.5 text-[13px]">
-                    <NutritionRow label="CO₂ pro 100 g" value={`${sustainability.totalCo2Kg} kg`} />
-                    <NutritionRow label="Wasserverbrauch" value={`${sustainability.waterFootprintL} L`} />
-                    <NutritionRow label="Transportweg" value={`${sustainability.transportDistanceKm.toLocaleString()} km`} />
-                  </div>
-                  <p className={`text-xs mt-1.5 ${sustainability.comparisonToAverage < 0 ? "text-emerald-600" : "text-amber-600"}`}>
-                    {sustainability.comparisonToAverage < 0
-                      ? `${Math.abs(sustainability.comparisonToAverage)}% unter Durchschnitt`
-                      : `${sustainability.comparisonToAverage}% über Durchschnitt`}
-                  </p>
-                </section>
-              )}
+              {sustainability && <SustainabilityDetailCard analysis={sustainability} />}
 
               {/* Blockchain verification */}
               {batch?.id && <BlockchainCard batchId={batch.id} />}
@@ -1063,7 +1058,7 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 1: pick reason */}
       {reportStep === "reason" && (
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
           <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
@@ -1092,7 +1087,7 @@ export default function ProductScreen() {
 
       {/* Report sheet — step 2: add details */}
       {reportStep === "detail" && (
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
           <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
           <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
             <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
@@ -1109,7 +1104,15 @@ export default function ProductScreen() {
               className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
             />
             <button
-              onClick={() => { setReportSent(true); setReportStep("closed"); }}
+              onClick={() => {
+                productApi.createReport({
+                  productId: product.id!,
+                  batchId: batch?.id,
+                  createReportDto: { reason: reportReason, details: reportDetail || undefined },
+                }).catch(() => {});
+                setReportSent(true);
+                setReportStep("closed");
+              }}
               disabled={reportReason === "Sonstiges" && !reportDetail.trim()}
               className="w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white disabled:opacity-30"
             >
@@ -1122,6 +1125,7 @@ export default function ProductScreen() {
         </div>
       )}
 
+      {product?.id && <ProductChat productId={product.id} batchId={batch?.id} />}
     </div>
   );
 }

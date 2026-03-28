@@ -1,5 +1,5 @@
 import { Clock } from 'lucide-react'
-import type { ShelfLifePrediction } from '@/types/ai-features'
+import type { ShelfLifePredictionDto } from '@/api/models/ShelfLifePredictionDto'
 
 const IMPACT_COLORS: Record<string, string> = {
   low: 'bg-emerald-500',
@@ -7,14 +7,14 @@ const IMPACT_COLORS: Record<string, string> = {
   high: 'bg-red-500',
 }
 
-export function ShelfLifeCard({ prediction }: { prediction: ShelfLifePrediction }) {
+export function ShelfLifeCard({ prediction }: { prediction: ShelfLifePredictionDto }) {
   return (
     <div className="rounded-xl border p-3 space-y-2">
       <div className="flex items-center gap-2">
         <Clock className="h-4 w-4 text-amber-500" />
         <span className="text-xs font-semibold flex-1">Haltbarkeitsprognose</span>
         <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-          {Math.round(prediction.confidence * 100)}% Konfidenz
+          {Math.round((prediction.confidence ?? 0) * 100)}% Konfidenz
         </span>
       </div>
 
@@ -24,9 +24,9 @@ export function ShelfLifeCard({ prediction }: { prediction: ShelfLifePrediction 
       </div>
 
       <div className="space-y-1">
-        {prediction.riskFactors.map((rf) => (
+        {(prediction.riskFactors ?? []).map((rf) => (
           <div key={rf.id} className="flex items-center gap-2 text-xs">
-            <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${IMPACT_COLORS[rf.impact]}`} />
+            <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${IMPACT_COLORS[rf.impact ?? 'low']}`} />
             <span className="text-muted-foreground">{rf.factor}</span>
           </div>
         ))}

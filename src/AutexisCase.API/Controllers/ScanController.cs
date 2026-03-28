@@ -35,4 +35,28 @@ public class ScanController(IMediator mediator) : ControllerBase
         var result = await mediator.Send(new GetMyAlertsQuery(), cancellationToken);
         return Ok(result.Value);
     }
+
+    [HttpGet("all-alerts", Name = "GetAllAlerts")]
+    [ProducesResponseType(typeof(List<AlertDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllAlerts(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetAllAlertsQuery(), cancellationToken);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("all-products", Name = "GetAllProductsWithStatus")]
+    [ProducesResponseType(typeof(List<AdminProductDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllProductsWithStatus(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetAllProductsWithStatusQuery(), cancellationToken);
+        return Ok(result.Value);
+    }
+
+    [HttpGet("reports", Name = "GetAllReports")]
+    [ProducesResponseType(typeof(List<ProductReportDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllReports(CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new GetAllReportsQuery(), cancellationToken);
+        return Ok(result.Value);
+    }
 }

@@ -15,21 +15,37 @@
 
 import * as runtime from '../runtime';
 import type {
+  AnomalyDetectionResultDto,
   BatchDto,
   BlockchainDto,
+  ChatMessageDto,
+  ChatResponseDto,
+  CreateReportDto,
   JourneyCoordinatesDto,
   JourneyEventDto,
   PointToPointRouteDto,
   ProblemDetails,
+  ProductAlternativesDto,
   ProductDto,
+  ProductReportDto,
   ProductSummaryDto,
   RouteDto,
+  ShelfLifePredictionDto,
+  SustainabilityAnalysisDto,
 } from '../models/index';
 import {
+    AnomalyDetectionResultDtoFromJSON,
+    AnomalyDetectionResultDtoToJSON,
     BatchDtoFromJSON,
     BatchDtoToJSON,
     BlockchainDtoFromJSON,
     BlockchainDtoToJSON,
+    ChatMessageDtoFromJSON,
+    ChatMessageDtoToJSON,
+    ChatResponseDtoFromJSON,
+    ChatResponseDtoToJSON,
+    CreateReportDtoFromJSON,
+    CreateReportDtoToJSON,
     JourneyCoordinatesDtoFromJSON,
     JourneyCoordinatesDtoToJSON,
     JourneyEventDtoFromJSON,
@@ -38,13 +54,37 @@ import {
     PointToPointRouteDtoToJSON,
     ProblemDetailsFromJSON,
     ProblemDetailsToJSON,
+    ProductAlternativesDtoFromJSON,
+    ProductAlternativesDtoToJSON,
     ProductDtoFromJSON,
     ProductDtoToJSON,
+    ProductReportDtoFromJSON,
+    ProductReportDtoToJSON,
     ProductSummaryDtoFromJSON,
     ProductSummaryDtoToJSON,
     RouteDtoFromJSON,
     RouteDtoToJSON,
+    ShelfLifePredictionDtoFromJSON,
+    ShelfLifePredictionDtoToJSON,
+    SustainabilityAnalysisDtoFromJSON,
+    SustainabilityAnalysisDtoToJSON,
 } from '../models/index';
+
+export interface AskProductRequest {
+    productId: string;
+    batchId?: string;
+    chatMessageDto?: ChatMessageDto;
+}
+
+export interface CreateReportRequest {
+    productId: string;
+    batchId?: string;
+    createReportDto?: CreateReportDto;
+}
+
+export interface GetAnomalyDetectionRequest {
+    batchId: string;
+}
 
 export interface GetBatchBlockchainRequest {
     batchId: string;
@@ -66,6 +106,10 @@ export interface GetPointToPointRouteRequest {
     profile?: string;
 }
 
+export interface GetProductAlternativesRequest {
+    productId: string;
+}
+
 export interface GetProductByGtinRequest {
     gtin: string;
 }
@@ -82,6 +126,14 @@ export interface GetProductJourneyRequest {
     id: string;
 }
 
+export interface GetShelfLifePredictionRequest {
+    batchId: string;
+}
+
+export interface GetSustainabilityRequest {
+    batchId: string;
+}
+
 export interface LookupBatchRequest {
     gtin?: string;
     lot?: string;
@@ -91,6 +143,137 @@ export interface LookupBatchRequest {
  * 
  */
 export class ProductApi extends runtime.BaseAPI {
+
+    /**
+     */
+    async askProductRaw(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ChatResponseDto>> {
+        if (requestParameters['productId'] == null) {
+            throw new runtime.RequiredError(
+                'productId',
+                'Required parameter "productId" was null or undefined when calling askProduct().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['batchId'] != null) {
+            queryParameters['batchId'] = requestParameters['batchId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{productId}/chat`.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ChatMessageDtoToJSON(requestParameters['chatMessageDto']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ChatResponseDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async askProduct(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ChatResponseDto> {
+        const response = await this.askProductRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async createReportRaw(requestParameters: CreateReportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductReportDto>> {
+        if (requestParameters['productId'] == null) {
+            throw new runtime.RequiredError(
+                'productId',
+                'Required parameter "productId" was null or undefined when calling createReport().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['batchId'] != null) {
+            queryParameters['batchId'] = requestParameters['batchId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{productId}/report`.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId']))),
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: CreateReportDtoToJSON(requestParameters['createReportDto']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProductReportDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async createReport(requestParameters: CreateReportRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProductReportDto> {
+        const response = await this.createReportRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getAnomalyDetectionRaw(requestParameters: GetAnomalyDetectionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AnomalyDetectionResultDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling getAnomalyDetection().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}/anomalies`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AnomalyDetectionResultDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getAnomalyDetection(requestParameters: GetAnomalyDetectionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AnomalyDetectionResultDto> {
+        const response = await this.getAnomalyDetectionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      */
@@ -258,6 +441,45 @@ export class ProductApi extends runtime.BaseAPI {
      */
     async getPointToPointRoute(requestParameters: GetPointToPointRouteRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<PointToPointRouteDto> {
         const response = await this.getPointToPointRouteRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getProductAlternativesRaw(requestParameters: GetProductAlternativesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ProductAlternativesDto>> {
+        if (requestParameters['productId'] == null) {
+            throw new runtime.RequiredError(
+                'productId',
+                'Required parameter "productId" was null or undefined when calling getProductAlternatives().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/{productId}/alternatives`.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ProductAlternativesDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getProductAlternatives(requestParameters: GetProductAlternativesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ProductAlternativesDto> {
+        const response = await this.getProductAlternativesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -446,6 +668,84 @@ export class ProductApi extends runtime.BaseAPI {
      */
     async getProducts(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<ProductSummaryDto>> {
         const response = await this.getProductsRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getShelfLifePredictionRaw(requestParameters: GetShelfLifePredictionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ShelfLifePredictionDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling getShelfLifePrediction().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}/shelf-life`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ShelfLifePredictionDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getShelfLifePrediction(requestParameters: GetShelfLifePredictionRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ShelfLifePredictionDto> {
+        const response = await this.getShelfLifePredictionRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getSustainabilityRaw(requestParameters: GetSustainabilityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<SustainabilityAnalysisDto>> {
+        if (requestParameters['batchId'] == null) {
+            throw new runtime.RequiredError(
+                'batchId',
+                'Required parameter "batchId" was null or undefined when calling getSustainability().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Product/batch/{batchId}/sustainability`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => SustainabilityAnalysisDtoFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getSustainability(requestParameters: GetSustainabilityRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<SustainabilityAnalysisDto> {
+        const response = await this.getSustainabilityRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

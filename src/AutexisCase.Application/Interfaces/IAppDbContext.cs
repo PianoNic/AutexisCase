@@ -20,6 +20,7 @@ public interface IAppDbContext
     DbSet<ScanRecord> ScanRecords { get; }
     DbSet<RouteCache> RouteCaches { get; }
     DbSet<EpcisEvent> EpcisEvents { get; }
+    DbSet<ProductReport> ProductReports { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
