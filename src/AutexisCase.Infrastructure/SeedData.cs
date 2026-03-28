@@ -248,7 +248,96 @@ public static class SeedData
             ]
         };
 
-        dbContext.Products.AddRange(chocolate, pistachioChocolate);
+        var muesli = new Product
+        {
+            Id = Guid.Parse("c3d4e5f6-a7b8-9012-cdef-123456789012"),
+            Gtin = "7613035839427",
+            Name = "Bio Crunchy Müesli",
+            Brand = "Familia",
+            Category = "Frühstück",
+            Weight = "600g",
+            Origin = "Schweiz",
+            Certifications = ["Bio Suisse", "EU Bio"],
+            NutriScore = "B",
+            NovaGroup = 3,
+            EcoScore = "A",
+            Nutrition = new Nutrition
+            {
+                EnergyKcal = 425, Fat = 14, SaturatedFat = 2.5m, Carbs = 60,
+                Sugars = 18, Fiber = 8, Protein = 11, Salt = 0.05m
+            },
+            Batches =
+            [
+                new Batch
+                {
+                    Id = Guid.Parse("f3000000-0000-0000-0000-000000000003"),
+                    LotNumber = "BM-2026-0087",
+                    Status = ProductStatus.Recall,
+                    RiskScore = 98,
+                    ShelfLifeDays = 270,
+                    DaysRemaining = 195,
+                    Co2Kg = 0.8m,
+                    WaterLiters = 520m,
+                    ProductionDate = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+                    ExpiryDate = new DateTime(2026, 10, 28, 0, 0, 0, DateTimeKind.Utc),
+                    JourneyEvents =
+                    [
+                        new JourneyEvent
+                        {
+                            Step = "Ernte", Location = "Thurgau, Schweiz", Latitude = 47.5535, Longitude = 9.0581,
+                            Timestamp = new DateTime(2026, 1, 10, 7, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Completed, Icon = "sprout", Temperature = 4,
+                            Details = "Bio-Hafer und Dinkel geerntet von zertifiziertem Bio-Suisse-Betrieb (Hof Müller, 45ha).",
+                            Co2Kg = 0.1m, WaterLiters = 200, Cost = 0.80m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Verarbeitung", Location = "Sachseln OW, Schweiz", Latitude = 46.8636, Longitude = 8.2328,
+                            Timestamp = new DateTime(2026, 1, 28, 6, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Warning, Icon = "factory", Temperature = 18,
+                            Details = "RÜCKRUF: Metallfremdkörper (Edelstahlsplitter, ≤3mm) in Produktionslinie erkannt. Defektes Sieb an Röstanlage. 12 Chargen betroffen. BLV-Meldung Nr. 2026-0341 erstattet.",
+                            Co2Kg = 0.3m, WaterLiters = 150, Cost = 1.50m
+                        },
+                        new JourneyEvent
+                        {
+                            Step = "Rückruf", Location = "Schweizweit", Latitude = 46.9480, Longitude = 7.4474,
+                            Timestamp = new DateTime(2026, 2, 5, 9, 0, 0, DateTimeKind.Utc),
+                            Status = JourneyStatus.Warning, Icon = "store", Temperature = 20,
+                            Details = "Sofortiger Verkaufsstopp und Rückruf aller betroffenen Chargen (BM-2026-0080 bis BM-2026-0091). Kunden werden gebeten, das Produkt nicht zu konsumieren und im Laden zurückzugeben.",
+                            Co2Kg = 0.4m, WaterLiters = 10, Cost = 3.20m
+                        }
+                    ],
+                    PriceBreakdown =
+                    [
+                        new PriceStep { Stage = "Rohstoffe", Amount = 0.80m, Percentage = 14.5m },
+                        new PriceStep { Stage = "Verarbeitung", Amount = 1.50m, Percentage = 27.3m },
+                        new PriceStep { Stage = "Rückruf-Kosten", Amount = 3.20m, Percentage = 58.2m }
+                    ],
+                    TemperatureLogs = [],
+                    Alerts =
+                    [
+                        new Alert
+                        {
+                            Type = AlertType.Recall, Severity = AlertSeverity.Critical,
+                            Title = "Produktrückruf — Metallfremdkörper",
+                            Description = "In der Charge BM-2026-0087 wurden Edelstahlsplitter (≤3mm) nachgewiesen. Defektes Sieb an der Röstanlage. Verletzungsgefahr beim Verzehr. Sofortiger Rückruf durch BLV angeordnet. Produkt NICHT konsumieren.",
+                            Timestamp = new DateTime(2026, 2, 5, 8, 0, 0, DateTimeKind.Utc),
+                            Read = false
+                        },
+                        new Alert
+                        {
+                            Type = AlertType.Recall, Severity = AlertSeverity.Critical,
+                            Title = "Qualitätskontrolle fehlgeschlagen",
+                            Description = "Metalldetektor hat bei Stichprobe der Charge BM-2026-0087 Edelstahlpartikel detektiert. Gesamte Tagesproduktion (12 Chargen) gesperrt. Interne Untersuchung läuft.",
+                            Timestamp = new DateTime(2026, 2, 3, 14, 0, 0, DateTimeKind.Utc),
+                            Read = false
+                        }
+                    ]
+                }
+            ]
+        };
+
+        dbContext.Products.AddRange(chocolate, pistachioChocolate, muesli);
         await dbContext.SaveChangesAsync();
     }
 }
