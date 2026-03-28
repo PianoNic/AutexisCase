@@ -951,12 +951,12 @@ export default function ProductScreen() {
           )}
 
           <DrawerHeader className="shrink-0 pb-2 !text-left">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center justify-between">
               <DrawerTitle className="text-sm font-semibold text-muted-foreground">
                 {product.brand}{product.weight ? ` · ${product.weight}` : ''}
               </DrawerTitle>
               {(lot || batch?.lotNumber) && (
-                <span className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-1.5 py-0.5">
+                <span className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-1.5 py-0.5 shrink-0">
                   <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
                   <span className="text-[10px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
                 </span>
