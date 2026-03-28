@@ -51,9 +51,7 @@ export function BlockchainCard({ batchId }: { batchId: string }) {
           onTouchMoveCapture={(e) => e.stopPropagation()}
         >
           <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4 max-h-[80dvh] flex flex-col" data-vaul-no-drag>
-            <div className="mx-auto h-1 w-10 rounded-full bg-muted shrink-0" />
-
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background px-5 pb-5 pt-3 space-y-3 max-h-[90dvh] flex flex-col" data-vaul-no-drag>
             {/* Header */}
             <div className="flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
