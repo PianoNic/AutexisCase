@@ -10,6 +10,16 @@ Consumers scan a barcode, see exactly where their food comes from, how it was tr
 |:---:|:---:|:---:|
 | ![Login](docs/screenshots/01-login.png) | ![Product](docs/screenshots/04-product-map.png) | ![Vendor](docs/screenshots/06-vendor-dashboard.png) |
 
+## Dokumentation
+
+| Dokument | Inhalt |
+|----------|--------|
+| [Produktübersicht](docs/produktuebersicht.md) | Problem, Zielgruppen, Nutzen, aktueller Funktionsumfang, Roadmap |
+| [Anwenderguide](docs/anwenderguide.md) | Login, Barcode-Scan, LOT-Erfassung, Produktseite, Chat, Meldungen |
+| [Vendorguide](docs/vendorguide.md) | Vendor Portal, Dashboard, Rückrufe, Kundenmeldungen |
+| [Technik und Betrieb](docs/technik-und-betrieb.md) | Architektur, CQRS, Clean Architecture, EPCIS, Blockchain, CI/CD |
+| [Testing und Setup](docs/testing-und-setup.md) | Setup-Anleitung, Demo-Accounts, Testabdeckung, API-Referenz |
+
 ---
 
 ## Features
