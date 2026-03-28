@@ -111,9 +111,9 @@ function certIcon(name: string) {
   return CERT_ICONS[name] ?? <Award className="h-3.5 w-3.5 text-emerald-600" />;
 }
 
-function getStatusString(status: number | undefined): string {
-  if (status === 2) return "Warning";
-  if (status === 1) return "Current";
+function getStatusString(status: string | number | undefined): string {
+  if (status === "Warning" || status === 2) return "Warning";
+  if (status === "Current" || status === 1) return "Current";
   return "Completed";
 }
 
@@ -334,7 +334,7 @@ export default function ProductScreen() {
   const [alternatives, setAlternatives] = useState<ProductAlternativesDto | null>(null);
   const anomalies = anomalyResult?.anomalies ?? [];
 
-  const coldChainOk = batch ? batch.status === 0 : true;
+  const coldChainOk = batch ? batch.status === "Ok" || batch.status === 0 : true;
 
   useEffect(() => {
     if (!batch?.id) return;
@@ -843,6 +843,9 @@ export default function ProductScreen() {
             <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
+            {batch?.lotNumber && (
+              <p className="text-[10px] font-mono text-muted-foreground">LOT {batch.lotNumber}</p>
+            )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
@@ -853,9 +856,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className={`flex-1 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
-              isFullyOpen ? "overflow-y-auto" : "overflow-hidden"
-            }`}
+            className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
           >
             <div className="px-4 space-y-4">
               {/* Origin */}
