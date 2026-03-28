@@ -775,7 +775,7 @@ export default function ProductScreen() {
                           setActiveIndex(index);
                         }
                       }}
-                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : "snap-center"}`}
+                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : "snap-center [scroll-snap-stop:always]"}`}
                     >
                       <Card
                         size="sm"
