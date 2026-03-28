@@ -54,14 +54,18 @@ export function ProductChat({ productId, batchId }: { productId: string; batchId
 
       {/* Chat sheet */}
       {open && (
-        <div
-          className="fixed inset-0 z-[100]"
-          onPointerDownCapture={(e) => e.stopPropagation()}
-          onTouchStartCapture={(e) => e.stopPropagation()}
-          onTouchMoveCapture={(e) => e.stopPropagation()}
-        >
-          <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background flex flex-col max-h-[85dvh]" data-vaul-no-drag>
+        <div className="fixed inset-0 z-[100]">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setOpen(false)}
+            onPointerDownCapture={(e) => e.stopPropagation()}
+            onTouchStartCapture={(e) => e.stopPropagation()}
+          />
+          <div
+            className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background flex flex-col max-h-[85dvh]"
+            data-vaul-no-drag
+            onTouchMoveCapture={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
               <div className="flex items-center gap-2">
