@@ -113,6 +113,8 @@ Users can also enter the LOT number manually or skip the LOT step.
 | `GET` | `/api/Scan/recent` | User's recent scans |
 | `GET` | `/api/Scan/alerts` | Alerts for user's scanned products |
 | `POST` | `/api/Ocr/lot` | Extract LOT number from image (AI vision) |
+| `POST` | `/api/Epcis/events` | Capture EPCIS 2.0 events (JSON-LD) |
+| `GET` | `/api/Epcis/events` | Query EPCIS events (`EQ_epc`, `EQ_bizStep`) |
 | `GET` | `/api/App/config` | OIDC configuration (anonymous) |
 | `POST` | `/api/Auth/sync` | Sync authenticated user to database |
 
@@ -128,6 +130,7 @@ Users can also enter the LOT number manually or skip the LOT step.
 | **Barcode** | Native BarcodeDetector API + zxing-wasm fallback |
 | **Routing** | [OpenRouteService](https://openrouteservice.org) (truck/car route polylines) |
 | **Product Data** | Open Food Facts (auto-fetch) |
+| **Supply Chain** | GS1/EPCIS 2.0 event tracking (local storage) |
 | **Architecture** | Clean Architecture, CQRS (Mediator), role-based authorization |
 
 ## OIDC Configuration
@@ -144,6 +147,39 @@ Users can also enter the LOT number manually or skip the LOT step.
 
 - **Development**: `http://localhost:5173/callback`
 - **Production**: `https://<your-domain>/callback`
+
+## EPCIS Integration
+
+The app implements [EPCIS 2.0](https://www.gs1.org/standards/epcis) (Electronic Product Code Information Services) for standardized supply chain event tracking.
+
+### How it works
+
+Journey events from the app's domain model are automatically mapped to EPCIS 2.0 ObjectEvents on startup:
+
+| Journey Step | EPCIS bizStep | Disposition |
+|---|---|---|
+| Ernte / Farm | `commissioning` | `active` |
+| Verarbeitung / Factory | `commissioning` | `active` |
+| Transport / Truck | `shipping` | `damaged` (if warning) |
+| Lager / Warehouse | `receiving` | `active` |
+| Regal / Store | `retail_selling` | `sellable_accessible` |
+
+Each event includes the product's EPC identifier (derived from GTIN + LOT), coordinates, timestamps, and extended data (temperature, CO2, cost).
+
+### Querying events
+
+```bash
+# All events
+GET /api/Epcis/events
+
+# By product EPC
+GET /api/Epcis/events?EQ_epc=urn:epc:id:sgtin:7610848001015.LX-2026-0142
+
+# By business step
+GET /api/Epcis/events?EQ_bizStep=shipping
+```
+
+Events are stored locally in PostgreSQL — no external EPCIS repository container is required.
 
 ## Docker (Production)
 

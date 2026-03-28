@@ -32,6 +32,7 @@ builder.Services.AddHttpClient<OpenFoodFactsService>();
 builder.Services.AddScoped<IOpenFoodFactsService>(sp => sp.GetRequiredService<OpenFoodFactsService>());
 builder.Services.AddHttpClient<RoutingService>();
 builder.Services.AddScoped<IRoutingService>(sp => sp.GetRequiredService<RoutingService>());
+builder.Services.AddScoped<IEpcisService, EpcisService>();
 
 
 // Mediator, Validation & Authorization
@@ -80,6 +81,13 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AutexisCaseDbContext>();
     dbContext.Database.Migrate();
     await SeedData.SeedAsync(dbContext);
+
+    // Seed EPCIS events from journey data
+    if (app.Environment.IsDevelopment())
+    {
+        var epcis = scope.ServiceProvider.GetRequiredService<IEpcisService>();
+        await EpcisSeedData.SeedAsync(dbContext, epcis, app.Logger);
+    }
 }
 
 
