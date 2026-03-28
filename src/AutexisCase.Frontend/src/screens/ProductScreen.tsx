@@ -448,8 +448,11 @@ export default function ProductScreen() {
 
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
 
+    // Calculate how much screen the drawer + cards cover, shift camera up so marker stays visible
     const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
-    const visibleCenterFraction = (1 - drawerFraction) / 2;
+    const cardsFraction = expandedCard ? 0.15 : 0.08; // expanded cards take more space above drawer
+    const coveredFraction = drawerFraction + cardsFraction;
+    const visibleCenterFraction = (1 - coveredFraction) / 2;
     const offsetFraction = 0.5 - visibleCenterFraction;
     const degreesPerPixel = 360 / (512 * Math.pow(2, targetCamera.zoom));
     const pitchFactor = 1 / Math.cos((48 * Math.PI) / 180);
@@ -464,7 +467,7 @@ export default function ProductScreen() {
       easing: (t) =>
         t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
     });
-  }, [activeIndex, events, mapLoaded]);
+  }, [activeIndex, events, mapLoaded, snap, expandedCard]);
 
   const handleInteractionStart = useCallback(() => {
     isUserInteractingRef.current = true;
@@ -623,7 +626,7 @@ export default function ProductScreen() {
   return (
     <div className="relative h-full w-full overflow-hidden bg-background">
       <div className="absolute inset-0 bg-gradient-to-b from-emerald-50 via-background to-background">
-        <div className="absolute inset-0" data-vaul-no-drag>
+        <div className="absolute inset-0 touch-auto" data-vaul-no-drag>
           <Map
             reuseMaps
             attributionControl={false}
