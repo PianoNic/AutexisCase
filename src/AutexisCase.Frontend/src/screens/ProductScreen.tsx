@@ -298,7 +298,6 @@ export default function ProductScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
-  const showDetails = isFullyOpen;
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
   const [reportReason, setReportReason] = useState("");
@@ -781,7 +780,7 @@ export default function ProductScreen() {
                       style={{
                         flex: compactJourney
                           ? '0 0 auto'
-                          : showDetails
+                          : isFullyOpen
                             ? '0 0 85vw'
                             : '0 0 280px',
                         transition: 'flex-basis 400ms cubic-bezier(0.4, 0, 0.2, 1)',
@@ -798,8 +797,8 @@ export default function ProductScreen() {
                         <CardContent
                           className="transition-all duration-400 overflow-hidden"
                           style={{
-                            padding: compactJourney ? "4px 10px" : showDetails ? "16px" : "16px",
-                            maxHeight: compactJourney ? "32px" : showDetails ? "600px" : "100px",
+                            padding: compactJourney ? "4px 10px" : isFullyOpen ? "16px" : "16px",
+                            maxHeight: compactJourney ? "32px" : isFullyOpen ? "600px" : "100px",
                             transition: "max-height 400ms cubic-bezier(0.4, 0, 0.2, 1), padding 300ms ease",
                           }}
                         >
@@ -832,7 +831,7 @@ export default function ProductScreen() {
                               </div>
 
                               {/* Expanded detail content */}
-                              {showDetails && (() => {
+                              {isFullyOpen && (() => {
                                 const prevEv = index > 0 ? events[index - 1] : null;
                                 const hrs = prevEv
                                   ? Math.round((new Date(event.timestamp).getTime() - new Date(prevEv.timestamp).getTime()) / 3600000)
