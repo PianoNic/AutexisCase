@@ -761,7 +761,6 @@ export default function ProductScreen() {
       <Drawer
         open
         modal={false}
-        handleOnly
         snapPoints={SNAP_POINTS}
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
