@@ -15,7 +15,6 @@ import {
   WarehouseIcon,
 } from "@hugeicons/core-free-icons";
 import maplibregl from "maplibre-gl";
-import mlcontour from "maplibre-contour";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import {
   Drawer,
@@ -32,14 +31,7 @@ import { useAppAuth } from "@/auth/use-app-auth";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
-const contourDemSource = new mlcontour.DemSource({
-  url: "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png",
-  encoding: "terrarium",
-  encoding: "mapbox",
-  maxzoom: 12,
-  worker: true,
-});
-let isContourProtocolSetup = false;
+// terrain/contour removed
 const SNAP_POINTS = [0.08, 0.55, 0.995];
 const EMPTY_EVENTS: JourneyEvent[] = [];
 type MapPoint = [number, number];
@@ -536,93 +528,13 @@ export default function ProductScreen() {
   );
 
   const handleMapLoad = useCallback((event: { target: maplibregl.Map }) => {
-    if (!isContourProtocolSetup) {
-      contourDemSource.setupMaplibre(maplibregl);
-      isContourProtocolSetup = true;
-    }
-
     const map = event.target;
     const firstSymbolLayerId = map
       .getStyle()
-      .layers?.find((layer) => layer.type === "symbol")?.id;
+      .layers?.find((layer: any) => layer.type === "symbol")?.id;
 
-    if (!map.getSource("journey-dem")) {
-      map.addSource("journey-dem", {
-        type: "raster-dem",
-        tiles: [contourDemSource.sharedDemProtocolUrl],
-        tileSize: 512,
-        maxzoom: 12,
-      });
-    }
-
-    if (!map.getSource("journey-contours")) {
-      map.addSource("journey-contours", {
-        type: "vector",
-        tiles: [
-          contourDemSource.contourProtocolUrl({
-            overzoom: 1,
-            thresholds: {
-              9: [200, 1000],
-              10: [100, 500],
-              11: [50, 200],
-              12: [20, 100],
-              13: [20, 100],
-              14: [10, 50],
-            },
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 14,
-      });
-    }
-
-    if (!map.getLayer("journey-hillshade")) {
-      map.addLayer(
-        {
-          id: "journey-hillshade",
-          type: "hillshade",
-          source: "journey-dem",
-          paint: {
-            "hillshade-exaggeration": 0.2,
-            "hillshade-shadow-color": "#475569",
-            "hillshade-highlight-color": "#f8fafc",
-            "hillshade-accent-color": "#94a3b8",
-          },
-        },
-        firstSymbolLayerId,
-      );
-    }
-
-    if (!map.getLayer("journey-contours-line")) {
-      map.addLayer(
-        {
-          id: "journey-contours-line",
-          type: "line",
-          source: "journey-contours",
-          "source-layer": "contours",
-          paint: {
-            "line-color": "#64748b",
-            "line-opacity": [
-              "interpolate",
-              ["linear"],
-              ["zoom"],
-              9,
-              0,
-              10,
-              0.16,
-              12,
-              0.26,
-              14,
-              0.34,
-            ],
-            "line-width": ["match", ["get", "level"], 1, 1.1, 0.55],
-          },
-        },
-        firstSymbolLayerId,
-      );
-    }
+    // No terrain/contour layers — clean map
+    void firstSymbolLayerId;
   }, []);
 
   useEffect(() => {
@@ -637,7 +549,7 @@ export default function ProductScreen() {
 
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
     const startCamera = { ...cameraRef.current };
-    const duration = 700;
+    const duration = 1500;
     const startedAt = performance.now();
 
     const animate = (time: number) => {
@@ -672,7 +584,7 @@ export default function ProductScreen() {
 
     cancelAnimationFrame(routeAnimFrameRef.current);
     setRouteProgress(0);
-    const travelDuration = 9800;
+    const travelDuration = 18000;
     const startedAt = performance.now();
 
     const animateRoute = (time: number) => {
