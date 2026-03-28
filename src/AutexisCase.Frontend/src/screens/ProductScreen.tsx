@@ -15,6 +15,7 @@ import {
   WarehouseIcon,
 } from "@hugeicons/core-free-icons";
 import maplibregl from "maplibre-gl";
+import useEmblaCarousel from "embla-carousel-react";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
 import { ArrowRight, Thermometer, ShieldCheck, Leaf, TreePine, Award, Sprout, Flag } from "lucide-react";
 import {
@@ -307,8 +308,7 @@ export default function ProductScreen() {
   const isScrollSnapping = useRef(false);
   const clickedRef = useRef(false);
   const initializedRef = useRef(false);
-  const touchStartX = useRef(0);
-  const touchStartY = useRef(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ align: 'center', containScroll: false, dragFree: false });
   const mapInstanceRef = useRef<maplibregl.Map | null>(null);
   const isUserInteractingRef = useRef(false);
   const snapRef = useRef<number | string | null>(SNAP_POINTS[1]);
@@ -554,6 +554,28 @@ export default function ProductScreen() {
     }
   }, [activeIndex, events.length, scrollToCard]);
 
+  // Embla: sync carousel selection with activeIndex
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => {
+      const idx = emblaApi.selectedScrollSnap();
+      if (idx !== activeIndex) {
+        activeIndexRef.current = idx;
+        setActiveIndex(idx);
+      }
+    };
+    emblaApi.on('select', onSelect);
+    return () => { emblaApi.off('select', onSelect); };
+  }, [emblaApi, activeIndex]);
+
+  // Embla: scroll to active card when activeIndex changes from outside (map click, compact click)
+  useEffect(() => {
+    if (!emblaApi) return;
+    if (emblaApi.selectedScrollSnap() !== activeIndex) {
+      emblaApi.scrollTo(activeIndex);
+    }
+  }, [emblaApi, activeIndex]);
+
   useEffect(() => {
     return () => {
       if (scrollFrameRef.current) {
@@ -725,74 +747,21 @@ export default function ProductScreen() {
               style={{ opacity: isFullyOpen ? 0 : 1, transform: isFullyOpen ? 'scale(0.95) translateY(8px)' : 'scale(1) translateY(0)' }}
             >
               <div
-                ref={scrollRef}
+                className="pointer-events-auto overflow-hidden"
+                ref={emblaRef}
                 onPointerDownCapture={(event) => event.stopPropagation()}
-                onTouchStart={(e) => {
-                  touchStartX.current = e.touches[0].clientX;
-                  touchStartY.current = e.touches[0].clientY;
-                }}
-                onTouchEnd={(e) => {
-                  if (compactJourney) return;
-                  const dx = e.changedTouches[0].clientX - touchStartX.current;
-                  const dy = e.changedTouches[0].clientY - touchStartY.current;
-                  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
-                    const next = dx < 0
-                      ? Math.min(activeIndex + 1, events.length - 1)
-                      : Math.max(activeIndex - 1, 0);
-                    if (next !== activeIndex) {
-                      clickedRef.current = true;
-                      setActiveIndex(next);
-                    }
-                  }
-                }}
-                className={`pointer-events-auto flex items-center gap-0 overscroll-x-contain px-4 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
-                  compactJourney
-                    ? "overflow-x-hidden"
-                    : "overflow-x-hidden"
-                }`}
               >
-                <div className="w-[40%] shrink-0" />
-                {events.map((event, index) => (
-                  <div key={event.id} className="flex shrink-0 items-center">
-                    {index > 0 && (
-                      <div className="flex items-center px-1">
-                        <svg
-                          className="h-3 w-8 transition-colors duration-300"
-                          viewBox="0 0 32 12"
-                          fill="none"
-                        >
-                          <line
-                            x1="0"
-                            y1="6"
-                            x2="24"
-                            y2="6"
-                            stroke={journeyStatusColor[getStatusString(events[index - 1].status)] ?? "#3d6b2e"}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                          />
-                          <polyline
-                            points="22,2 28,6 22,10"
-                            stroke={journeyStatusColor[getStatusString(events[index - 1].status)] ?? "#3d6b2e"}
-                            strokeWidth="1.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="none"
-                          />
-                        </svg>
-                      </div>
-                    )}
-
+                <div className="flex gap-3 px-4">
+                  {events.map((event, index) => (
                     <div
-                      ref={(element) => {
-                        cardsRef.current[index] = element;
-                      }}
+                      key={event.id}
+                      ref={(element) => { cardsRef.current[index] = element; }}
                       onClick={() => {
-                        if (compactJourney) {
-                          clickedRef.current = true;
-                          setActiveIndex(index);
-                        }
+                        clickedRef.current = true;
+                        setActiveIndex(index);
                       }}
-                      className={`shrink-0 ${compactJourney ? "cursor-pointer" : ""}`}
+                      className="shrink-0 cursor-pointer"
+                      style={{ flex: compactJourney ? '0 0 auto' : '0 0 280px', transition: 'flex-basis 300ms ease' }}
                     >
                       <Card
                         size="sm"
@@ -801,7 +770,6 @@ export default function ProductScreen() {
                             ? "border-primary ring-2 ring-primary/15"
                             : "border-border"
                         }`}
-                        style={{ width: compactJourney ? "90px" : "280px", transition: "width 300ms ease, padding 300ms ease" }}
                       >
                         <CardContent
                           className="transition-all duration-300 overflow-hidden"
@@ -820,7 +788,7 @@ export default function ProductScreen() {
                               </span>
                             </div>
                           ) : (
-                            <>
+                            <div className="space-y-3">
                               <div className="flex items-center gap-2.5">
                                 <div
                                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
@@ -842,15 +810,13 @@ export default function ProductScreen() {
                                   {event.details}
                                 </p>
                               )}
-                            </>
+                            </div>
                           )}
                         </CardContent>
                       </Card>
                     </div>
-                  </div>
-                ))}
-
-                <div className="w-[40%] shrink-0" />
+                  ))}
+                </div>
               </div>
             </div>
           )}
