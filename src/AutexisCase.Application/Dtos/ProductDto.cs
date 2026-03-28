@@ -143,6 +143,14 @@ public record OcrResultDto(
     bool Success
 );
 
+public record AdminProductDto(
+    Guid Id,
+    string Name,
+    string Brand,
+    string? ImageUrl,
+    ProductStatus Status
+);
+
 public record ShelfLifePredictionDto(
     int PredictedDaysRemaining,
     double Confidence,

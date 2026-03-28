@@ -15,11 +15,14 @@
 
 import * as runtime from '../runtime';
 import type {
+  AdminProductDto,
   AlertDto,
   ProblemDetails,
   ScanRecordDto,
 } from '../models/index';
 import {
+    AdminProductDtoFromJSON,
+    AdminProductDtoToJSON,
     AlertDtoFromJSON,
     AlertDtoToJSON,
     ProblemDetailsFromJSON,
@@ -36,6 +39,70 @@ export interface RecordScanRequest {
  * 
  */
 export class ScanApi extends runtime.BaseAPI {
+
+    /**
+     */
+    async getAllAlertsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AlertDto>>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Scan/all-alerts`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(AlertDtoFromJSON));
+    }
+
+    /**
+     */
+    async getAllAlerts(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AlertDto>> {
+        const response = await this.getAllAlertsRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
+     */
+    async getAllProductsWithStatusRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AdminProductDto>>> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("Bearer", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+        const response = await this.request({
+            path: `/api/Scan/all-products`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(AdminProductDtoFromJSON));
+    }
+
+    /**
+     */
+    async getAllProductsWithStatus(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AdminProductDto>> {
+        const response = await this.getAllProductsWithStatusRaw(initOverrides);
+        return await response.value();
+    }
 
     /**
      */

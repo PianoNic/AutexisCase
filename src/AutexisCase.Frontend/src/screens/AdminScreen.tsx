@@ -14,7 +14,7 @@ import {
   Flame,
 } from 'lucide-react'
 import { scanApi } from '@/api/client'
-import type { ScanRecordDto } from '@/api/models/ScanRecordDto'
+import type { AdminProductDto } from '@/api/models/AdminProductDto'
 import type { AlertDto } from '@/api/models/AlertDto'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -51,17 +51,17 @@ const alertTypeLabel: Record<string, string> = {
 
 export default function AdminScreen() {
   const navigate = useNavigate()
-  const [scans, setScans] = useState<ScanRecordDto[]>([])
+  const [products, setProducts] = useState<AdminProductDto[]>([])
   const [alerts, setAlerts] = useState<AlertDto[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = () => {
     setLoading(true)
     Promise.all([
-      scanApi.getRecentScans().catch(() => []),
-      scanApi.getMyAlerts().catch(() => []),
-    ]).then(([s, a]) => {
-      setScans(s)
+      scanApi.getAllProductsWithStatus().catch(() => []),
+      scanApi.getAllAlerts().catch(() => []),
+    ]).then(([p, a]) => {
+      setProducts(p)
       setAlerts(a)
       setLoading(false)
     })
@@ -70,22 +70,13 @@ export default function AdminScreen() {
   useEffect(() => { fetchData() }, [])
 
   // Derived data
-  const problemProducts = scans.filter(
-    (s) => s.productStatus === 'Warning' || s.productStatus === 'Recall',
+  const problemProducts = products.filter(
+    (p) => p.status === 'Warning' || p.status === 'Recall',
   )
-  const recallProducts = scans.filter((s) => s.productStatus === 'Recall')
-  const okProducts = scans.filter((s) => s.productStatus === 'Ok')
+  const okProducts = products.filter((p) => p.status === 'Ok')
 
   const criticalAlerts = alerts.filter((a) => a.severity === 'Critical')
   const unreadAlerts = alerts.filter((a) => !a.read)
-
-  // Unique products with issues (deduped by productId)
-  const seenIds = new Set<string>()
-  const uniqueProblemProducts = problemProducts.filter((s) => {
-    if (!s.productId || seenIds.has(s.productId)) return false
-    seenIds.add(s.productId)
-    return true
-  })
 
   // Sort alerts: critical first, then unread, then by date
   const sortedAlerts = [...alerts].sort((a, b) => {
@@ -148,7 +139,7 @@ export default function AdminScreen() {
             {/* ── Quick status strip ── */}
             <div className="flex gap-2">
               <div className="flex-1 rounded-xl border p-3 text-center">
-                <p className="text-xl font-bold">{scans.length}</p>
+                <p className="text-xl font-bold">{products.length}</p>
                 <p className="text-[10px] text-muted-foreground">Produkte</p>
               </div>
               <div className="flex-1 rounded-xl border bg-emerald-500/5 p-3 text-center">
@@ -168,27 +159,27 @@ export default function AdminScreen() {
                 <p className="text-sm font-semibold">Produkte mit Auffälligkeiten</p>
               </div>
 
-              {uniqueProblemProducts.length === 0 ? (
+              {problemProducts.length === 0 ? (
                 <div className="rounded-xl border bg-emerald-500/5 p-4 flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
                   <p className="text-sm text-emerald-700">
-                    Alle Ihre Produkte sind einwandfrei. Keine Auffälligkeiten erkannt.
+                    Alle Produkte sind einwandfrei. Keine Auffälligkeiten erkannt.
                   </p>
                 </div>
               ) : (
                 <div className="rounded-xl border divide-y">
-                  {uniqueProblemProducts.map((s) => {
-                    const isRecall = s.productStatus === 'Recall'
+                  {problemProducts.map((p) => {
+                    const isRecall = p.status === 'Recall'
                     return (
                       <button
-                        key={s.productId}
+                        key={p.id}
                         className="flex w-full items-center gap-3 px-3 py-3 text-left active:bg-accent transition-colors"
-                        onClick={() => navigate(`/product?id=${s.productId}`)}
+                        onClick={() => navigate(`/product?id=${p.id}`)}
                       >
-                        {s.productImageUrl ? (
+                        {p.imageUrl ? (
                           <img
-                            src={s.productImageUrl}
-                            alt={s.productName ?? ''}
+                            src={p.imageUrl}
+                            alt={p.name ?? ''}
                             className="h-11 w-11 shrink-0 rounded-lg object-cover"
                           />
                         ) : (
@@ -197,8 +188,8 @@ export default function AdminScreen() {
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{s.productName}</p>
-                          <p className="text-[11px] text-muted-foreground">{s.productBrand}</p>
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          <p className="text-[11px] text-muted-foreground">{p.brand}</p>
                         </div>
                         <Badge
                           variant="outline"
@@ -299,65 +290,47 @@ export default function AdminScreen() {
               <div className="flex items-center gap-2 mb-3">
                 <Package className="h-4 w-4 text-muted-foreground" />
                 <p className="text-sm font-semibold">Alle Produkte</p>
-                <span className="text-xs text-muted-foreground ml-auto">{scans.length} Einträge</span>
+                <span className="text-xs text-muted-foreground ml-auto">{products.length} Einträge</span>
               </div>
 
-              {scans.length === 0 ? (
+              {products.length === 0 ? (
                 <div className="rounded-xl border p-4 text-center">
                   <p className="text-sm text-muted-foreground">Noch keine Produkte erfasst.</p>
                 </div>
               ) : (
-                <>
-                  <div className="rounded-xl border divide-y">
-                    {scans.slice(0, 3).map((s) => {
-                      const isOk = s.productStatus === 'Ok'
-                      const isRecall = s.productStatus === 'Recall'
-                      return (
-                        <button
-                          key={s.id}
-                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
-                          onClick={() => navigate(`/product?id=${s.productId}`)}
-                        >
-                          {s.productImageUrl ? (
-                            <img
-                              src={s.productImageUrl}
-                              alt={s.productName ?? ''}
-                              className="h-9 w-9 shrink-0 rounded-lg object-cover"
-                            />
-                          ) : (
-                            <div className="h-9 w-9 shrink-0 rounded-lg bg-muted flex items-center justify-center">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium truncate">{s.productName}</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-[10px] text-muted-foreground">{s.productBrand}</p>
-                              {s.scannedAt && (
-                                <p className="text-[10px] text-muted-foreground">
-                                  {new Date(s.scannedAt).toLocaleDateString('de-DE')}
-                                </p>
-                              )}
-                            </div>
+                <div className="rounded-xl border divide-y">
+                  {products.map((p) => {
+                    const isOk = p.status === 'Ok'
+                    const isRecall = p.status === 'Recall'
+                    return (
+                      <button
+                        key={p.id}
+                        className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
+                        onClick={() => navigate(`/product?id=${p.id}`)}
+                      >
+                        {p.imageUrl ? (
+                          <img
+                            src={p.imageUrl}
+                            alt={p.name ?? ''}
+                            className="h-9 w-9 shrink-0 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="h-9 w-9 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground" />
                           </div>
-                          <div className={`h-2 w-2 rounded-full shrink-0 ${
-                            isRecall ? 'bg-red-500' : isOk ? 'bg-emerald-500' : 'bg-amber-500'
-                          }`} />
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        </button>
-                      )
-                    })}
-                  </div>
-                  {scans.length > 3 && (
-                    <button
-                      onClick={() => navigate('/admin/products')}
-                      className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-sm font-medium text-primary active:bg-accent transition-colors"
-                    >
-                      Alle {scans.length} Produkte anzeigen
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  )}
-                </>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{p.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{p.brand}</p>
+                        </div>
+                        <div className={`h-2 w-2 rounded-full shrink-0 ${
+                          isRecall ? 'bg-red-500' : isOk ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`} />
+                        <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </button>
+                    )
+                  })}
+                </div>
               )}
             </section>
 
