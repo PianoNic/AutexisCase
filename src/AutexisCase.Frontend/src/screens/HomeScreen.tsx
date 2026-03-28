@@ -17,7 +17,7 @@ export default function HomeScreen() {
   const [alerts, setAlerts] = useState<AlertDto[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchData = () => {
     Promise.all([
       scanApi.getRecentScans().catch(() => []),
       scanApi.getMyAlerts().catch(() => []),
@@ -26,6 +26,15 @@ export default function HomeScreen() {
       setAlerts(a.filter((al) => !al.read))
       setLoading(false)
     })
+  }
+
+  useEffect(() => {
+    fetchData()
+    // Refresh when page becomes visible (returning from product/scan)
+    const onFocus = () => fetchData()
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchData() })
+    return () => window.removeEventListener('focus', onFocus)
   }, [])
 
   const okCount = scans.filter((s) => s.productStatus === 'Ok').length

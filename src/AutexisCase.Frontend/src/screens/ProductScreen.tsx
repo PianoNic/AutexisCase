@@ -329,6 +329,14 @@ export default function ProductScreen() {
   const clampedDrawerProgress = Math.max(0, Math.min(1, drawerProgress));
   const compactJourney = clampedDrawerProgress > 0.35;
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
+  const drawerScrollRef = useRef<HTMLDivElement>(null);
+
+  // Scroll content to top when drawer collapses from full
+  useEffect(() => {
+    if (!isFullyOpen && drawerScrollRef.current) {
+      drawerScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [isFullyOpen]);
 
   // AI features (from API)
   const [shelfLife, setShelfLife] = useState<ShelfLifePredictionDto | null>(null);
@@ -877,11 +885,12 @@ export default function ProductScreen() {
 
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{event.location}</span>
-                                {index === activeIndex && !expandedCard ? (
-                                  <span className="text-[10px] text-primary/70 font-medium animate-pulse">Tippen ↑</span>
-                                ) : (
-                                  <span>{formatEventDate(event.timestamp)}</span>
-                                )}
+                                <span className="text-right leading-tight">
+                                  {event.timestamp && <>
+                                    <span className="block">{new Date(event.timestamp).toLocaleDateString("de-CH", { month: "short" })}</span>
+                                    <span className="block">{new Date(event.timestamp).getFullYear()}</span>
+                                  </>}
+                                </span>
                               </div>
 
                               {/* Expanded detail content */}
@@ -954,18 +963,29 @@ export default function ProductScreen() {
             </div>
           )}
 
-          <DrawerHeader className="shrink-0 pb-2">
-            <DrawerTitle className="text-sm font-semibold text-muted-foreground">
-              {product.brand}{product.weight ? ` · ${product.weight}` : ''}
-            </DrawerTitle>
-            {(lot || batch?.lotNumber) && (
-              <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2 py-0.5 w-fit">
-                <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
-                <span className="text-[11px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
-              </span>
-            )}
+          <DrawerHeader className="shrink-0 pb-2 !text-left">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="text-sm font-semibold text-muted-foreground">
+                {product.brand}{product.weight ? ` · ${product.weight}` : ''}
+              </DrawerTitle>
+              {(lot || batch?.lotNumber) && (
+                <span className="inline-flex items-center gap-1 rounded-md border bg-muted/50 px-1.5 py-0.5 shrink-0">
+                  <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground">LOT</span>
+                  <span className="text-[10px] font-mono text-foreground">{lot || batch!.lotNumber}</span>
+                </span>
+              )}
+            </div>
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
-            {!coldChainOk && (
+            {batch?.status === 'Recall' && (
+              <div className="flex items-center gap-2 rounded-xl border-2 border-red-300 bg-red-50 px-3 py-2 text-red-800 mt-1">
+                <HugeiconsIcon icon={AlertCircleIcon} className="h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-semibold">Produktrückruf</p>
+                  <p className="text-[10px]">Diese Charge wurde zurückgerufen. Bitte nicht konsumieren.</p>
+                </div>
+              </div>
+            )}
+            {batch?.status === 'Warning' && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
                 <Thermometer className="h-3.5 w-3.5 shrink-0" />
                 <p className="text-[10px]">Kühlketten-Abweichung erkannt.</p>
@@ -974,7 +994,8 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className="flex-1 overflow-y-auto overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))]"
+            ref={drawerScrollRef}
+            className={`flex-1 overscroll-y-contain pb-[max(6rem,env(safe-area-inset-bottom))] ${isFullyOpen ? 'overflow-y-auto' : 'overflow-hidden'}`}
           >
             <div className="px-4 py-2 space-y-4">
               {/* Origin */}
