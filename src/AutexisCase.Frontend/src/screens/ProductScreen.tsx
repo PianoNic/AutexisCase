@@ -309,6 +309,14 @@ export default function ProductScreen() {
   const [expandedCard, setExpandedCard] = useState(false);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
+
+  // Workaround: vaul sets pointer-events:none on body even with modal={false}
+  // Force it back when report popup is open so inputs work
+  useEffect(() => {
+    if (reportStep !== "closed") {
+      requestAnimationFrame(() => { document.body.style.pointerEvents = "auto"; });
+    }
+  }, [reportStep]);
   const [reportReason, setReportReason] = useState("");
   const [reportDetail, setReportDetail] = useState("");
   const [reportSent, setReportSent] = useState(false);
@@ -1074,7 +1082,7 @@ export default function ProductScreen() {
 
       {/* Report popups — portaled to body */}
       {reportStep === "reason" && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ pointerEvents: 'auto' }}>
           <div className="absolute inset-0 bg-black/50" onClick={() => setReportStep("closed")} />
           <div className="relative w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl space-y-4">
             <div className="text-center">
@@ -1102,7 +1110,7 @@ export default function ProductScreen() {
       )}
 
       {reportStep === "detail" && createPortal(
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ pointerEvents: 'auto' }}>
           <div className="absolute inset-0 bg-black/50" onClick={() => setReportStep("closed")} />
           <div className="relative w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl space-y-4">
             <div className="text-center">
