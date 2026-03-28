@@ -448,19 +448,18 @@ export default function ProductScreen() {
 
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
 
-    // Shift camera so the marker appears in the visible area above drawer + cards
-    const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
-    const cardsFraction = expandedCard ? 0.25 : 0.12;
-    const coveredFraction = Math.min(drawerFraction + cardsFraction, 0.9);
-    // Place the marker at 1/3 of the visible area from top (not center)
-    const visibleTop = 0.08; // top bar
-    const visibleArea = 1 - visibleTop - coveredFraction;
-    const targetScreenFraction = visibleTop + visibleArea * 0.35;
-    const offsetFraction = 0.5 - targetScreenFraction;
-    const screenHeight = window.innerHeight;
-    const degreesPerPixel = 360 / (512 * Math.pow(2, targetCamera.zoom));
-    const pitchFactor = 1 / Math.cos((targetCamera.pitch * Math.PI) / 180);
-    targetCamera.latitude -= offsetFraction * screenHeight * degreesPerPixel * pitchFactor;
+    // Center the marker in the visible gap between top bar and drawer+cards
+    // Screen: [top bar ~60px] [visible area] [cards ~80-200px] [drawer]
+    // We want the marker at the vertical center of the visible area
+    const h = window.innerHeight;
+    const topPx = 60; // top bar height
+    const drawerFrac = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
+    const drawerPx = h * drawerFrac;
+    const cardsPx = expandedCard ? 200 : 80;
+    const coveredBottom = drawerPx + cardsPx;
+    const visibleCenter = topPx + (h - topPx - coveredBottom) / 2;
+    // Map center is at h/2. We need to shift by (h/2 - visibleCenter) pixels
+    const pixelShift = h / 2 - visibleCenter;
 
     map.easeTo({
       center: [targetCamera.longitude, targetCamera.latitude],
@@ -468,6 +467,7 @@ export default function ProductScreen() {
       bearing: targetCamera.bearing,
       pitch: targetCamera.pitch,
       duration: 1500,
+      padding: { top: 0, bottom: pixelShift * 2, left: 0, right: 0 },
       easing: (t) =>
         t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
     });
