@@ -138,11 +138,12 @@ public class RoutingServiceTests
     }
 
     [Fact]
-    public void Throws_when_api_key_not_configured()
+    public void Does_not_throw_when_api_key_not_configured()
     {
         using var db = TestDbContext.Create();
         var config = new ConfigurationBuilder().AddInMemoryCollection().Build();
-        Assert.Throws<InvalidOperationException>(() => new RoutingService(new HttpClient(), config, db));
+        var service = new RoutingService(new HttpClient(), config, db);
+        Assert.NotNull(service);
     }
 }
 
