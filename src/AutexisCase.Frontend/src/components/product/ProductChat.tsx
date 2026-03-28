@@ -41,7 +41,7 @@ export function ProductChat({ batchId }: { batchId: string }) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-4 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+          className="fixed bottom-28 right-4 z-[55] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
         >
           <MessageCircle className="h-5 w-5" />
         </button>
