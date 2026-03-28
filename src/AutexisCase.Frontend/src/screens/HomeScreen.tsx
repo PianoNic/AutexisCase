@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, ScanLine, Award } from 'lucide-react'
+import { ChevronRight, ScanLine, Award, Package } from 'lucide-react'
 import { scanApi } from '@/api/client'
 import type { ScanRecordDto } from '@/api/models/ScanRecordDto'
 import type { AlertDto } from '@/api/models/AlertDto'
@@ -90,8 +90,12 @@ export default function HomeScreen() {
                   className="flex w-full items-center gap-3 px-3 py-2.5 text-left active:bg-accent transition-colors"
                   onClick={() => navigate(`/product?id=${s.productId}`)}
                 >
-                  {s.productImageUrl && (
+                  {s.productImageUrl ? (
                     <img src={s.productImageUrl} alt={s.productName ?? ''} className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                      <Package className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{s.productName}</p>

@@ -9,8 +9,12 @@ export function AlternativesCard({ data }: { data: ProductAlternativesDto }) {
       <div className="space-y-2">
         {data.alternatives.map((alt) => (
           <div key={alt.id} className="flex items-center gap-3 rounded-xl border px-3 py-2">
-            {alt.imageUrl && (
+            {alt.imageUrl ? (
               <img src={alt.imageUrl} alt={alt.name ?? ""} className="h-10 w-10 rounded-lg object-cover shrink-0" />
+            ) : (
+              <div className="h-10 w-10 shrink-0 rounded-lg bg-muted flex items-center justify-center">
+                <span className="text-xs font-bold text-muted-foreground">{(alt.name ?? "?")[0]}</span>
+              </div>
             )}
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium truncate">{alt.name}</p>
