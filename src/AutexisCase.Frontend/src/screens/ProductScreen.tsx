@@ -783,14 +783,14 @@ export default function ProductScreen() {
                             ? "border-primary ring-2 ring-primary/15"
                             : "border-border"
                         }`}
-                        style={{ width: compactJourney ? undefined : "280px" }}
+                        style={{ width: compactJourney ? "90px" : "280px", transition: "width 300ms ease, padding 300ms ease" }}
                       >
                         <CardContent
-                          className={
-                            compactJourney
-                              ? "px-2.5 py-1"
-                              : "space-y-3 px-4 py-4"
-                          }
+                          className="transition-all duration-300 overflow-hidden"
+                          style={{
+                            padding: compactJourney ? "4px 10px" : "16px",
+                            maxHeight: compactJourney ? "32px" : "200px",
+                          }}
                         >
                           {compactJourney ? (
                             <div className="flex items-center gap-2">
