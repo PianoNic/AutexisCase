@@ -448,15 +448,19 @@ export default function ProductScreen() {
 
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
 
-    // Calculate how much screen the drawer + cards cover, shift camera up so marker stays visible
+    // Shift camera so the marker appears in the visible area above drawer + cards
     const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
-    const cardsFraction = expandedCard ? 0.15 : 0.08; // expanded cards take more space above drawer
-    const coveredFraction = drawerFraction + cardsFraction;
-    const visibleCenterFraction = (1 - coveredFraction) / 2;
-    const offsetFraction = 0.5 - visibleCenterFraction;
+    const cardsFraction = expandedCard ? 0.25 : 0.12;
+    const coveredFraction = Math.min(drawerFraction + cardsFraction, 0.9);
+    // Place the marker at 1/3 of the visible area from top (not center)
+    const visibleTop = 0.08; // top bar
+    const visibleArea = 1 - visibleTop - coveredFraction;
+    const targetScreenFraction = visibleTop + visibleArea * 0.35;
+    const offsetFraction = 0.5 - targetScreenFraction;
+    const screenHeight = window.innerHeight;
     const degreesPerPixel = 360 / (512 * Math.pow(2, targetCamera.zoom));
-    const pitchFactor = 1 / Math.cos((48 * Math.PI) / 180);
-    targetCamera.latitude -= offsetFraction * 700 * degreesPerPixel * pitchFactor;
+    const pitchFactor = 1 / Math.cos((targetCamera.pitch * Math.PI) / 180);
+    targetCamera.latitude -= offsetFraction * screenHeight * degreesPerPixel * pitchFactor;
 
     map.easeTo({
       center: [targetCamera.longitude, targetCamera.latitude],
