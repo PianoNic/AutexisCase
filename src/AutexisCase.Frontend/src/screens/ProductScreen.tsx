@@ -877,11 +877,7 @@ export default function ProductScreen() {
 
                               <div className="flex items-center justify-between text-xs text-muted-foreground">
                                 <span>{event.location}</span>
-                                {index === activeIndex && !expandedCard ? (
-                                  <span className="text-[10px] text-primary/70 font-medium animate-pulse">Tippen ↑</span>
-                                ) : (
-                                  <span>{formatEventDate(event.timestamp)}</span>
-                                )}
+                                <span>{formatEventDate(event.timestamp)}</span>
                               </div>
 
                               {/* Expanded detail content */}
