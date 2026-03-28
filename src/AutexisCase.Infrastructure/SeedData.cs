@@ -127,7 +127,7 @@ public static class SeedData
         var pistachioChocolate = new Product
         {
             Id = Guid.Parse("b2c3d4e5-f6a7-8901-bcde-f12345678901"),
-            Gtin = "7616599663992",
+            Gtin = "7616500663992",
             Name = "Feine Milchschokolade Pistazie",
             Brand = "Frey (Migros)",
             Category = "Süsswaren",
