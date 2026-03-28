@@ -854,9 +854,9 @@ export default function ProductScreen() {
                         >
                           {compactJourney ? (
                             <div className="flex items-center gap-2">
-                              <div
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
-                              />
+                              <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}>
+                                <HugeiconsIcon icon={getEventIcon(event)} strokeWidth={2.5} className="size-2.5" />
+                              </div>
                               <span className="text-xs font-medium">
                                 {event.step}
                               </span>
@@ -866,9 +866,9 @@ export default function ProductScreen() {
                               {/* Header */}
                               <div className="flex items-center gap-2.5">
                                 <div
-                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
                                 >
-                                  {index + 1}
+                                  <HugeiconsIcon icon={getEventIcon(event)} strokeWidth={2} className="size-3.5" />
                                 </div>
                                 <p className="text-sm font-semibold leading-tight">
                                   {event.step}
