@@ -19,6 +19,7 @@ public interface IAppDbContext
     DbSet<Alert> Alerts { get; }
     DbSet<ScanRecord> ScanRecords { get; }
     DbSet<RouteCache> RouteCaches { get; }
+    DbSet<EpcisEvent> EpcisEvents { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

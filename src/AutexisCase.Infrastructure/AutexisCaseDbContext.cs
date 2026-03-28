@@ -21,6 +21,7 @@ public class AutexisCaseDbContext(DbContextOptions<AutexisCaseDbContext> options
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<ScanRecord> ScanRecords => Set<ScanRecord>();
     public DbSet<RouteCache> RouteCaches => Set<RouteCache>();
+    public DbSet<EpcisEvent> EpcisEvents => Set<EpcisEvent>();
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
