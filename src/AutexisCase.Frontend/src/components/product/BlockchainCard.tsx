@@ -113,10 +113,19 @@ export function BlockchainCard({ batchId }: { batchId: string }) {
                           {block.temperature}°C
                         </p>
                       )}
-                      <div className="mt-1.5 rounded bg-muted px-2 py-1">
-                        <p className="text-[9px] font-mono text-foreground/70 break-all leading-tight">
-                          {block.hash?.slice(0, 32)}...
-                        </p>
+                      <div className="mt-1.5 space-y-0.5">
+                        <div className="rounded bg-muted px-2 py-1">
+                          <p className="text-[8px] text-muted-foreground">HASH</p>
+                          <p className="text-[9px] font-mono text-foreground/70 break-all leading-tight">
+                            {block.hash}
+                          </p>
+                        </div>
+                        <div className="rounded bg-muted px-2 py-1">
+                          <p className="text-[8px] text-muted-foreground">PREV</p>
+                          <p className="text-[9px] font-mono text-foreground/70 break-all leading-tight">
+                            {block.previousHash}
+                          </p>
+                        </div>
                       </div>
                     </div>
                 </div>
