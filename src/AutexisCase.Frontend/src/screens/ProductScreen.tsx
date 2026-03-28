@@ -843,6 +843,9 @@ export default function ProductScreen() {
             <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
             </DrawerTitle>
+            {batch?.lotNumber && (
+              <p className="text-[10px] font-mono text-muted-foreground">LOT {batch.lotNumber}</p>
+            )}
             <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
@@ -853,7 +856,7 @@ export default function ProductScreen() {
           </DrawerHeader>
 
           <div
-            className={`flex-1 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
+            className={`flex-1 overscroll-y-contain pb-[max(4rem,env(safe-area-inset-bottom))] ${
               currentSnap >= SNAP_POINTS[1] ? "overflow-y-auto" : "overflow-hidden"
             }`}
           >
