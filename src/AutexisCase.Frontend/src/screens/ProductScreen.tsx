@@ -792,7 +792,7 @@ export default function ProductScreen() {
       </div>
 
       <Drawer
-        open
+        open={reportStep === "closed"}
         modal={false}
         snapPoints={SNAP_POINTS}
         activeSnapPoint={snap}
