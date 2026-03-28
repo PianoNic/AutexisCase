@@ -86,22 +86,19 @@ export function BlockchainCard({ batchId }: { batchId: string }) {
             </div>
 
             {/* Blocks list */}
-            <div className="overflow-y-auto flex-1 space-y-0">
+            <div className="overflow-y-auto flex-1">
               {chain.blocks.map((block, i) => (
-                <div key={block.index} className="relative">
-                  {i > 0 && (
-                    <div className="absolute left-4 -top-2 h-2 w-px bg-border" />
+                <div key={block.index} className="relative flex gap-3">
+                  {/* Continuous vertical line */}
+                  {i < chain.blocks!.length - 1 && (
+                    <div className="absolute left-4 top-8 bottom-0 w-px bg-border" />
                   )}
 
-                  <div className="flex gap-3">
-                    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700">
-                      <Link className="h-3.5 w-3.5" />
-                      {i < chain.blocks!.length - 1 && (
-                        <div className="absolute left-1/2 top-full h-3 w-px -translate-x-1/2 bg-border" />
-                      )}
-                    </div>
+                  <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 z-10">
+                    <Link className="h-3.5 w-3.5" />
+                  </div>
 
-                    <div className="flex-1 rounded-xl border px-3 py-2 mb-3">
+                  <div className="flex-1 rounded-xl border px-3 py-2 mb-3">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-semibold">Block #{block.index}</p>
                         <p className="text-[10px] text-muted-foreground">
@@ -131,7 +128,6 @@ export function BlockchainCard({ batchId }: { batchId: string }) {
                         </div>
                       </div>
                     </div>
-                  </div>
                 </div>
               ))}
             </div>
