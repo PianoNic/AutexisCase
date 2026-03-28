@@ -94,12 +94,12 @@ public class ProductController(IMediator mediator) : ControllerBase
         return Ok(result.Value);
     }
 
-    [HttpPost("batch/{batchId:guid}/chat", Name = "AskProduct")]
+    [HttpPost("{productId:guid}/chat", Name = "AskProduct")]
     [ProducesResponseType(typeof(ChatResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> AskProduct(Guid batchId, [FromBody] ChatMessageDto message, CancellationToken cancellationToken)
+    public async Task<IActionResult> AskProduct(Guid productId, [FromQuery] Guid? batchId, [FromBody] ChatMessageDto message, CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new AskProductCommand(batchId, message.Content), cancellationToken);
+        var result = await mediator.Send(new AskProductCommand(productId, batchId, message.Content), cancellationToken);
         if (result.IsFailure) return NotFound(result.Error);
         return Ok(result.Value);
     }

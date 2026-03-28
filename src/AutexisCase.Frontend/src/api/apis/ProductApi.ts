@@ -53,7 +53,8 @@ import {
 } from '../models/index';
 
 export interface AskProductRequest {
-    batchId: string;
+    productId: string;
+    batchId?: string;
     chatMessageDto?: ChatMessageDto;
 }
 
@@ -106,14 +107,18 @@ export class ProductApi extends runtime.BaseAPI {
     /**
      */
     async askProductRaw(requestParameters: AskProductRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ChatResponseDto>> {
-        if (requestParameters['batchId'] == null) {
+        if (requestParameters['productId'] == null) {
             throw new runtime.RequiredError(
-                'batchId',
-                'Required parameter "batchId" was null or undefined when calling askProduct().'
+                'productId',
+                'Required parameter "productId" was null or undefined when calling askProduct().'
             );
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters['batchId'] != null) {
+            queryParameters['batchId'] = requestParameters['batchId'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -128,7 +133,7 @@ export class ProductApi extends runtime.BaseAPI {
             }
         }
         const response = await this.request({
-            path: `/api/Product/batch/{batchId}/chat`.replace(`{${"batchId"}}`, encodeURIComponent(String(requestParameters['batchId']))),
+            path: `/api/Product/{productId}/chat`.replace(`{${"productId"}}`, encodeURIComponent(String(requestParameters['productId']))),
             method: 'POST',
             headers: headerParameters,
             query: queryParameters,

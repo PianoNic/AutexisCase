@@ -1027,7 +1027,7 @@ export default function ProductScreen() {
         </div>
       )}
 
-      {batch?.id && <ProductChat batchId={batch.id} />}
+      {product?.id && <ProductChat productId={product.id} batchId={batch?.id} />}
     </div>
   );
 }

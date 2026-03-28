@@ -9,36 +9,41 @@ using Microsoft.EntityFrameworkCore;
 namespace AutexisCase.Application.Commands;
 
 [AllowAuthenticated]
-public record AskProductCommand(Guid BatchId, string Question) : ICommand<Result<ChatResponseDto>>;
+public record AskProductCommand(Guid ProductId, Guid? BatchId, string Question) : ICommand<Result<ChatResponseDto>>;
 
 public class AskProductHandler(IAppDbContext dbContext, IChatService chatService) : ICommandHandler<AskProductCommand, Result<ChatResponseDto>>
 {
     public async ValueTask<Result<ChatResponseDto>> Handle(AskProductCommand request, CancellationToken cancellationToken)
     {
-        var batch = await dbContext.Batches.AsNoTracking()
-            .Include(b => b.Product)
-            .Include(b => b.JourneyEvents.OrderBy(j => j.Timestamp))
-            .Include(b => b.TemperatureLogs.OrderBy(t => t.Time))
-            .Include(b => b.Alerts)
-            .SingleOrDefaultAsync(b => b.Id == request.BatchId, cancellationToken);
+        var product = await dbContext.Products.AsNoTracking()
+            .Include(p => p.Batches)
+            .SingleOrDefaultAsync(p => p.Id == request.ProductId, cancellationToken);
 
-        if (batch is null) return Result.Failure<ChatResponseDto>("Batch not found.");
+        if (product is null) return Result.Failure<ChatResponseDto>("Product not found.");
 
-        var context = BuildProductContext(batch);
+        Domain.Batch? batch = null;
+        if (request.BatchId.HasValue)
+        {
+            batch = await dbContext.Batches.AsNoTracking()
+                .Include(b => b.JourneyEvents.OrderBy(j => j.Timestamp))
+                .Include(b => b.TemperatureLogs.OrderBy(t => t.Time))
+                .Include(b => b.Alerts)
+                .SingleOrDefaultAsync(b => b.Id == request.BatchId.Value, cancellationToken);
+        }
+
+        var context = BuildContext(product, batch);
         var answer = await chatService.AskAsync(request.Question, context, cancellationToken);
 
         return Result.Success(new ChatResponseDto(answer));
     }
 
-    private static string BuildProductContext(Domain.Batch batch)
+    private static string BuildContext(Domain.Product p, Domain.Batch? batch)
     {
         var sb = new StringBuilder();
-        var p = batch.Product;
 
         sb.AppendLine($"Produkt: {p.Name}");
         sb.AppendLine($"Marke: {p.Brand}");
         sb.AppendLine($"GTIN: {p.Gtin}");
-        sb.AppendLine($"LOT: {batch.LotNumber}");
         sb.AppendLine($"Kategorie: {p.Category}");
         sb.AppendLine($"Gewicht: {p.Weight}");
         sb.AppendLine($"Herkunft: {p.Origin}");
@@ -53,6 +58,8 @@ public class AskProductHandler(IAppDbContext dbContext, IChatService chatService
         sb.AppendLine($"  Ballaststoffe: {p.Nutrition.Fiber}g");
         sb.AppendLine($"  Eiweiss: {p.Nutrition.Protein}g");
         sb.AppendLine($"  Salz: {p.Nutrition.Salt}g");
+
+        if (batch is null) return sb.ToString();
 
         sb.AppendLine($"\nCharge: {batch.LotNumber}");
         sb.AppendLine($"Status: {batch.Status}");

@@ -7,7 +7,7 @@ interface Message {
   content: string;
 }
 
-export function ProductChat({ batchId }: { batchId: string }) {
+export function ProductChat({ productId, batchId }: { productId: string; batchId?: string }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -25,7 +25,11 @@ export function ProductChat({ batchId }: { batchId: string }) {
     setTimeout(() => scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }), 50);
 
     try {
-      const response = await productApi.askProduct({ batchId, chatMessageDto: { role: "user", content: question } });
+      const response = await productApi.askProduct({
+        productId,
+        batchId: batchId ?? undefined,
+        chatMessageDto: { role: "user", content: question },
+      });
       setMessages((prev) => [...prev, { role: "assistant", content: response.answer ?? "Keine Antwort." }]);
     } catch {
       setMessages((prev) => [...prev, { role: "assistant", content: "Fehler beim Laden der Antwort." }]);
@@ -41,7 +45,7 @@ export function ProductChat({ batchId }: { batchId: string }) {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-28 right-4 z-[55] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+          className="fixed bottom-4 right-4 z-[55] flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
         >
           <MessageCircle className="h-5 w-5" />
         </button>
