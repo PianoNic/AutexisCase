@@ -890,8 +890,31 @@ export default function ProductScreen() {
                                       )}
                                     </div>
 
+                                    {/* Quality & compliance */}
+                                    <div className="rounded-lg bg-primary/5 border border-primary/10 px-3 py-2.5 space-y-1.5">
+                                      <p className="text-[10px] text-primary font-semibold uppercase tracking-wider">Qualitätssicherung</p>
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {event.temperature != null && (
+                                          <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
+                                            Temperatur überwacht
+                                          </span>
+                                        )}
+                                        <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
+                                          Rückverfolgbar
+                                        </span>
+                                        <span className="rounded-full bg-background border px-2 py-0.5 text-[9px]">
+                                          HACCP konform
+                                        </span>
+                                        {getStatusString(event.status) === "Completed" && (
+                                          <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[9px] text-emerald-700">
+                                            ✓ Geprüft
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
                                     {/* Location detail */}
-                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/30">
+                                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
                                       <span>{event.location}</span>
                                       <span className="font-mono">{event.latitude.toFixed(4)}, {event.longitude.toFixed(4)}</span>
                                     </div>

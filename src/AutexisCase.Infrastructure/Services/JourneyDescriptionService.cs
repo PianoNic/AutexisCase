@@ -40,20 +40,28 @@ public class JourneyDescriptionService : IJourneyDescriptionService
             - Was diesen Schritt für die Qualität des Endprodukts bedeutet
 
             Schreibe lebendig und verständlich, nicht wie ein Lehrbuch. Der Ton ist informativ aber nahbar.
-            Antworte nur mit dem Text, ohne Titel, Anführungszeichen oder Formatierung.
+
+            Strukturiere deine Antwort so (nur Text, keine Markdown-Formatierung):
+
+            Zuerst 2-3 Sätze was genau bei diesem Schritt passiert.
+            Dann 1-2 Sätze warum das für die Qualität wichtig ist.
+            Dann 1 Fun Fact oder interessantes Detail über den Ort, den Prozess oder die Region.
+            Zum Schluss 1 Satz was der Konsument davon hat (z.B. Frische, Geschmack, Sicherheit).
+
+            Insgesamt 6-8 Sätze. Nur Fliesstext, keine Aufzählungen, keine Überschriften.
             """);
 
         var tempInfo = temperature.HasValue ? $"Gemessene Temperatur: {temperature}°C." : "";
-        var prevInfo = !string.IsNullOrEmpty(previousStep) ? $"Vorheriger Schritt: {previousStep}." : "";
+        var prevInfo = !string.IsNullOrEmpty(previousStep) ? $"Vorheriger Schritt war: «{previousStep}»." : "";
 
         history.AddUserMessage($"""
             Produkt: {productName}
-            Aktueller Schritt: {step}
-            Standort: {location}
+            Aktueller Schritt in der Lieferkette: {step}
+            Standort/Region: {location}
             {tempInfo}
             {prevInfo}
 
-            Generiere einen informativen, spannenden Einblick für den Konsumenten.
+            Erzähle die Geschichte dieses Schritts für den Konsumenten.
             """);
 
         var response = await _chat.GetChatMessageContentAsync(history, cancellationToken: cancellationToken);
