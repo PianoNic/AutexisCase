@@ -716,7 +716,7 @@ export default function ProductScreen() {
         activeSnapPoint={snap}
         setActiveSnapPoint={setSnap}
       >
-        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[100dvh] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
+        <DrawerContent className="data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:max-h-[calc(100dvh-5rem)] min-h-[100dvh] flex flex-col bg-popover rounded-t-3xl border-t border-x border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] before:hidden">
           {events.length > 0 && (
             <div className="pointer-events-none absolute inset-x-0 bottom-full pb-2">
               <div
@@ -835,12 +835,10 @@ export default function ProductScreen() {
           )}
 
           <DrawerHeader className="shrink-0 pb-2">
-            <DrawerTitle className="text-base font-bold">
-              {product.name}
-            </DrawerTitle>
-            <DrawerDescription className="text-xs text-muted-foreground">
+            <DrawerTitle className="text-sm font-semibold text-muted-foreground">
               {product.brand}{product.weight ? ` · ${product.weight}` : ''}
-            </DrawerDescription>
+            </DrawerTitle>
+            <DrawerDescription className="sr-only">Product details</DrawerDescription>
             {!coldChainOk && (
               <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
                 <Thermometer className="h-3.5 w-3.5 shrink-0" />
