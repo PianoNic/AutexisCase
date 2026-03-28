@@ -16,6 +16,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import maplibregl from "maplibre-gl";
 import Map, { Layer, Marker, Source } from "react-map-gl/maplibre";
+import { ArrowRight, Thermometer, ShieldCheck, Leaf, TreePine, Award, Sprout, Flag } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -27,13 +28,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { useAppAuth } from "@/auth/use-app-auth";
+import { productApi } from "@/api/client";
+import type { ProductDto } from "@/api/models/ProductDto";
+import type { BatchDto } from "@/api/models/BatchDto";
+import type { JourneyEventDto } from "@/api/models/JourneyEventDto";
+import { getShelfLifePrediction, getAnomalyDetection, getSustainabilityAnalysis, getProductAlternatives } from "@/data/mock-ai";
+import { ShelfLifeCard } from "@/components/product/ShelfLifeCard";
+import { AlternativesCard } from "@/components/product/AlternativesCard";
 
 const MAP_STYLE_URL =
   "https://maps.black/styles/openstreetmap-protomaps/protomaps/grayscale/style.json";
-// terrain/contour removed
 const SNAP_POINTS = [0.08, 0.55, 0.995];
-const EMPTY_EVENTS: JourneyEvent[] = [];
 type MapPoint = [number, number];
 type MapCamera = {
   longitude: number;
@@ -59,75 +64,19 @@ interface JourneyWaypoint {
   transportType?: string | null;
 }
 
-interface JourneyEvent {
-  id: string;
-  step: string;
-  location: string;
-  latitude: number;
-  longitude: number;
-  timestamp: string;
-  status: string;
-  icon: string | null;
-  temperature: number | null;
-  details: string | null;
-  co2Kg: number | null;
-  waterLiters: number | null;
-  cost: number | null;
+// Extend generated type with fields the map needs
+type JourneyEvent = JourneyEventDto & {
   transportType?: string | null;
   waypoints?: JourneyWaypoint[] | null;
-}
+};
 
-interface Nutrition {
-  energyKcal: number;
-  fat: number;
-  saturatedFat: number;
-  carbs: number;
-  sugars: number;
-  fiber: number;
-  protein: number;
-  salt: number;
-}
-
-interface BatchSummary {
-  id: string;
-  lotNumber: string;
-  status: string;
-  riskScore: number;
-  expiryDate: string | null;
-}
-
-interface Batch {
-  id: string;
-  productId: string;
-  lotNumber: string;
-  status: string;
-  riskScore: number;
-  shelfLifeDays: number | null;
-  daysRemaining: number | null;
-  co2Kg: number | null;
-  waterLiters: number | null;
-  productionDate: string | null;
-  expiryDate: string | null;
-  journeyEvents: JourneyEvent[];
-  alerts: unknown[];
-}
-
-interface Product {
-  id: string;
-  gtin: string;
-  name: string;
-  brand: string;
-  imageUrl: string | null;
-  category: string | null;
-  weight: string | null;
-  origin: string | null;
-  certifications: string[];
-  nutriScore: string | null;
-  novaGroup: number | null;
-  ecoScore: string | null;
-  nutrition: Nutrition;
-  batches: BatchSummary[];
-}
+const GRADE_COLORS: Record<string, string> = {
+  A: "bg-emerald-500",
+  B: "bg-lime-500",
+  C: "bg-yellow-500",
+  D: "bg-orange-500",
+  E: "bg-red-500",
+};
 
 const journeyStatusColor: Record<string, string> = {
   Completed: "#3d6b2e",
@@ -141,17 +90,24 @@ const journeyStatusDot: Record<string, string> = {
   Warning: "bg-destructive",
 };
 
-const batchStatusLabel: Record<string, string> = {
-  Ok: "OK",
-  Warning: "Warning",
-  Recall: "Recall",
+const REPORT_REASONS = ["Falsche Produktangaben", "Kühlketten-Problem", "Beschädigung", "Abgelaufen", "Sonstiges"];
+
+const CERT_ICONS: Record<string, React.ReactNode> = {
+  Fairtrade: <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />,
+  "Rainforest Alliance": <TreePine className="h-3.5 w-3.5 text-emerald-600" />,
+  "EU Bio": <Leaf className="h-3.5 w-3.5 text-emerald-600" />,
+  Demeter: <Sprout className="h-3.5 w-3.5 text-emerald-600" />,
 };
 
-const batchBadgeVariant: Record<string, "default" | "secondary" | "destructive"> = {
-  Ok: "default",
-  Warning: "secondary",
-  Recall: "destructive",
-};
+function certIcon(name: string) {
+  return CERT_ICONS[name] ?? <Award className="h-3.5 w-3.5 text-emerald-600" />;
+}
+
+function getStatusString(status: number | undefined): string {
+  if (status === 2) return "Warning";
+  if (status === 1) return "Current";
+  return "Completed";
+}
 
 function getMarkerFill(status: string) {
   if (status === "Warning") return "#ef4444";
@@ -215,9 +171,9 @@ function getCameraForEvent(
 }
 
 function getEventIcon(event: JourneyEvent) {
-  const signature = `${event.icon ?? ""} ${event.step} ${event.location}`.toLowerCase();
+  const signature = `${event.icon ?? ""} ${event.step ?? ""} ${event.location ?? ""}`.toLowerCase();
 
-  if (event.status === "Warning") return AlertCircleIcon;
+  if (getStatusString(event.status) === "Warning") return AlertCircleIcon;
   if (signature.includes("sprout") || signature.includes("ernte") || signature.includes("farm")) {
     return Leaf02Icon;
   }
@@ -245,7 +201,7 @@ function getTransportIcon(
   fallbackEvent: JourneyEvent,
 ) {
   const signature =
-    `${transportType ?? ""} ${fallbackEvent.icon ?? ""} ${fallbackEvent.step}`.toLowerCase();
+    `${transportType ?? ""} ${fallbackEvent.icon ?? ""} ${fallbackEvent.step ?? ""}`.toLowerCase();
 
   if (
     signature.includes("ship") ||
@@ -309,30 +265,42 @@ function createRouteFeatureCollection(
   };
 }
 
-function formatEventDate(timestamp: string) {
+function formatEventDate(timestamp: Date | undefined) {
+  if (!timestamp) return "";
   return new Date(timestamp).toLocaleDateString("de-CH", {
     month: "short",
     year: "numeric",
   });
 }
 
+function NutritionRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium text-right">{value}</span>
+    </div>
+  );
+}
+
 export default function ProductScreen() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { accessToken } = useAppAuth();
   const id = searchParams.get("id");
   const gtin = searchParams.get("gtin");
   const lot = searchParams.get("lot");
   const hasLookupTarget = Boolean(id || gtin);
-  const [product, setProduct] = useState<Product | null>(null);
-  const [batch, setBatch] = useState<Batch | null>(null);
+  const [product, setProduct] = useState<ProductDto | null>(null);
+  const [batch, setBatch] = useState<BatchDto | null>(null);
   const [loading, setLoading] = useState(hasLookupTarget);
   const [snap, setSnap] = useState<number | string | null>(SNAP_POINTS[1]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [routeSegments, setRouteSegments] = useState<Record<string, [number, number][]>>({});
+  const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
+  const [reportReason, setReportReason] = useState("");
+  const [reportDetail, setReportDetail] = useState("");
+  const [reportSent, setReportSent] = useState(false);
   const activeIndexRef = useRef(activeIndex);
-  const animFrameRef = useRef(0);
   const scrollFrameRef = useRef(0);
   const cardsRef = useRef<Array<HTMLDivElement | null>>([]);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -350,6 +318,16 @@ export default function ProductScreen() {
   const compactJourney = clampedDrawerProgress > 0.35;
   const isFullyOpen = currentSnap >= SNAP_POINTS[SNAP_POINTS.length - 1];
 
+  // AI features (mock data)
+  const productId = product?.id ?? "";
+  const shelfLife = getShelfLifePrediction(productId);
+  const anomalyResult = getAnomalyDetection(productId);
+  const sustainability = getSustainabilityAnalysis(productId);
+  const alternatives = getProductAlternatives(productId);
+  const anomalies = anomalyResult?.anomalies ?? [];
+
+  const coldChainOk = batch ? batch.status === 0 : true;
+
   useEffect(() => {
     activeIndexRef.current = activeIndex;
   }, [activeIndex]);
@@ -359,58 +337,61 @@ export default function ProductScreen() {
   }, [snap]);
 
   useEffect(() => {
-    if (!accessToken || !hasLookupTarget) return;
+    if (!hasLookupTarget) return;
 
-    const url = id ? `/api/Product/${id}` : `/api/Product/gtin/${gtin}`;
-    fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: Product | null) => {
-        setProduct(data);
-        // If LOT provided, look up specific batch; otherwise use first batch
-        const batchUrl = lot && gtin
-          ? `/api/Product/batch/lookup?gtin=${gtin}&lot=${encodeURIComponent(lot)}`
-          : data?.batches?.length
-            ? `/api/Product/batch/${data.batches[0].id}`
-            : null;
-
-        if (batchUrl) {
-          fetch(batchUrl, {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          })
-            .then((r) => (r.ok ? r.json() : null))
-            .then((batchData: Batch | null) => {
-              setBatch(batchData);
-              if (batchData?.journeyEvents?.length) {
-                // Fetch real route polylines
-                if (batchData.id) {
-                  fetch(`/api/Product/batch/${batchData.id}/route`, {
-                    headers: { Authorization: `Bearer ${accessToken}` },
-                  })
-                    .then((r) => (r.ok ? r.json() : null))
-                    .then((routeData: { segments: { fromStep: string; toStep: string; points: number[][] }[] } | null) => {
-                      if (routeData?.segments) {
-                        const segMap: Record<string, [number, number][]> = {};
-                        routeData.segments.forEach((seg, i) => {
-                          segMap[String(i)] = seg.points.map(p => [p[1], p[0]] as [number, number]); // [lon, lat] for maplibre
-                        });
-                        setRouteSegments(segMap);
-                      }
-                    })
-                    .catch(console.error);
-                }
-              }
-            })
-            .catch(console.error);
+    const loadData = async () => {
+      try {
+        let p: ProductDto | null = null;
+        if (id) {
+          p = await productApi.getProductById({ id });
+        } else if (gtin) {
+          p = await productApi.getProductByGtin({ gtin });
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [accessToken, gtin, hasLookupTarget, id]);
+        if (!p) { setLoading(false); return; }
+        setProduct(p);
 
-  const events = batch?.journeyEvents ?? EMPTY_EVENTS;
+        let b: BatchDto | null = null;
+        if (lot && gtin) {
+          try { b = await productApi.lookupBatch({ gtin, lot }); } catch {
+            const firstBatch = p.batches?.[0];
+            if (firstBatch?.id) {
+              try { b = await productApi.getBatchById({ batchId: firstBatch.id }); } catch {}
+            }
+          }
+        } else {
+          const firstBatch = p.batches?.[0];
+          if (firstBatch?.id) {
+            try { b = await productApi.getBatchById({ batchId: firstBatch.id }); } catch {}
+          }
+        }
+
+        if (b) {
+          setBatch(b);
+          if (b.journeyEvents?.length && b.id) {
+            try {
+              const routeData = await productApi.getBatchRoute({ batchId: b.id });
+              if (routeData?.segments) {
+                const segMap: Record<string, [number, number][]> = {};
+                routeData.segments.forEach((seg, i) => {
+                  if (seg.points) {
+                    segMap[String(i)] = seg.points.map(p => [p[1], p[0]] as [number, number]);
+                  }
+                });
+                setRouteSegments(segMap);
+              }
+            } catch {}
+          }
+        }
+      } catch {}
+      setLoading(false);
+    };
+
+    loadData();
+  }, [gtin, hasLookupTarget, id, lot]);
+
+  const events: JourneyEvent[] = (batch?.journeyEvents ?? []) as JourneyEvent[];
   const routeLegs = events.slice(0, -1).map((event, index) => {
     const nextEvent = events[index + 1];
-    // Use real ORS route polyline if available, otherwise fall back to straight line
     const realRoute = routeSegments[String(index)];
     return {
       id: `${event.id}-${nextEvent.id}`,
@@ -424,7 +405,7 @@ export default function ProductScreen() {
   const allRouteData = createRouteFeatureCollection(
     routeLegs.map((leg) => ({
       points: leg.points,
-      color: getMarkerFill(leg.event.status),
+      color: getMarkerFill(getStatusString(leg.event.status)),
     })),
   );
 
@@ -435,7 +416,6 @@ export default function ProductScreen() {
 
   useEffect(() => {
     if (events.length === 0 || !mapInstanceRef.current) return;
-    if (isUserInteractingRef.current) return;
 
     const map = mapInstanceRef.current;
     const activeEvent = events[activeIndex];
@@ -443,9 +423,12 @@ export default function ProductScreen() {
     const nextEvent = activeIndex < events.length - 1 ? events[activeIndex + 1] : undefined;
     if (!activeEvent) return;
 
+    // Cancel any in-progress animation so the new target always wins
+    map.stop();
+    isUserInteractingRef.current = false;
+
     const targetCamera = getCameraForEvent(activeEvent, previousEvent, nextEvent);
 
-    // Shift camera south so the event marker renders in the visible area above the drawer.
     const drawerFraction = typeof snapRef.current === "number" ? snapRef.current : SNAP_POINTS[1];
     const visibleCenterFraction = (1 - drawerFraction) / 2;
     const offsetFraction = 0.5 - visibleCenterFraction;
@@ -580,7 +563,7 @@ export default function ProductScreen() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-sm text-muted-foreground">Loading product...</p>
+        <p className="text-sm text-muted-foreground">Laden...</p>
       </div>
     );
   }
@@ -588,9 +571,9 @@ export default function ProductScreen() {
   if (!product) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-sm text-muted-foreground">Product not found.</p>
+        <p className="text-sm text-muted-foreground">Produkt nicht gefunden.</p>
         <Button variant="outline" onClick={() => navigate("/")}>
-          Go back
+          Zurück
         </Button>
       </div>
     );
@@ -643,7 +626,7 @@ export default function ProductScreen() {
                       <div
                         className="relative flex h-3.5 w-3.5 items-center justify-center rounded-full border bg-white shadow-sm"
                         style={{
-                          borderColor: getMarkerFill(leg.event.status),
+                          borderColor: getMarkerFill(getStatusString(leg.event.status)),
                           boxShadow: "0 0 0 1.5px rgba(255,255,255,0.96)",
                         }}
                       >
@@ -670,7 +653,7 @@ export default function ProductScreen() {
                   {index === activeIndex && (
                     <div
                       className="map-node-pulse absolute inset-0 rounded-full"
-                      style={{ backgroundColor: getMarkerFill(event.status) }}
+                      style={{ backgroundColor: getMarkerFill(getStatusString(event.status)) }}
                     />
                   )}
                   <div
@@ -678,7 +661,7 @@ export default function ProductScreen() {
                     style={{
                       width: index === activeIndex ? 24 : 20,
                       height: index === activeIndex ? 24 : 20,
-                      backgroundColor: getMarkerFill(event.status),
+                      backgroundColor: getMarkerFill(getStatusString(event.status)),
                       borderColor: "#ffffff",
                       boxShadow: "0 0 0 2px rgba(255,255,255,0.98)",
                     }}
@@ -720,7 +703,9 @@ export default function ProductScreen() {
             </svg>
           </Button>
 
-          <div className="w-9" />
+          <div className="rounded-full bg-background/90 border shadow-sm px-3 py-1.5">
+            <span className="text-xs font-semibold truncate">{product.name}</span>
+          </div>
         </div>
       </div>
 
@@ -760,13 +745,13 @@ export default function ProductScreen() {
                             y1="6"
                             x2="24"
                             y2="6"
-                            stroke={journeyStatusColor[events[index - 1].status] ?? "#3d6b2e"}
+                            stroke={journeyStatusColor[getStatusString(events[index - 1].status)] ?? "#3d6b2e"}
                             strokeWidth="1.5"
                             strokeLinecap="round"
                           />
                           <polyline
                             points="22,2 28,6 22,10"
-                            stroke={journeyStatusColor[events[index - 1].status] ?? "#3d6b2e"}
+                            stroke={journeyStatusColor[getStatusString(events[index - 1].status)] ?? "#3d6b2e"}
                             strokeWidth="1.5"
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -807,7 +792,7 @@ export default function ProductScreen() {
                           {compactJourney ? (
                             <div className="flex items-center gap-2">
                               <div
-                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${journeyStatusDot[event.status] ?? "bg-primary"}`}
+                                className={`h-1.5 w-1.5 shrink-0 rounded-full ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
                               />
                               <span className="text-xs font-medium">
                                 {event.step}
@@ -817,7 +802,7 @@ export default function ProductScreen() {
                             <>
                               <div className="flex items-center gap-2.5">
                                 <div
-                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[event.status] ?? "bg-primary"}`}
+                                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${journeyStatusDot[getStatusString(event.status)] ?? "bg-primary"}`}
                                 >
                                   {index + 1}
                                 </div>
@@ -849,131 +834,206 @@ export default function ProductScreen() {
             </div>
           )}
 
-          <DrawerHeader className="shrink-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <DrawerTitle>{product.name}</DrawerTitle>
-                <DrawerDescription>
-                  {product.brand}
-                  {product.weight ? ` · ${product.weight}` : ""}
-                </DrawerDescription>
+          <DrawerHeader className="shrink-0 pb-2">
+            <DrawerTitle className="text-sm font-semibold text-muted-foreground">
+              {product.brand} · {product.weight}
+            </DrawerTitle>
+            <DrawerDescription className="sr-only">Product details</DrawerDescription>
+            {!coldChainOk && (
+              <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800 mt-1">
+                <Thermometer className="h-3.5 w-3.5 shrink-0" />
+                <p className="text-[10px]">Kühlketten-Abweichung erkannt.</p>
               </div>
-              {batch && (
-                <Badge variant={batchBadgeVariant[batch.status] ?? "default"}>
-                  {batchStatusLabel[batch.status] ?? "OK"}
-                </Badge>
-              )}
-            </div>
+            )}
           </DrawerHeader>
 
           <div
-            className={`flex-1 space-y-4 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
+            className={`flex-1 overscroll-y-contain pb-[max(1.5rem,env(safe-area-inset-bottom))] ${
               isFullyOpen ? "overflow-y-auto" : "overflow-hidden"
             }`}
           >
-            <div className="grid grid-cols-3 gap-2 px-4">
-              {[
-                { label: "Origin", value: product.origin ?? "-" },
-                { label: "Nutri-Score", value: product.nutriScore ?? "-" },
-                {
-                  label: "CO₂",
-                  value: batch?.co2Kg != null ? `${batch.co2Kg} kg` : "-",
-                },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-xl bg-muted px-3 py-2 text-center"
-                >
-                  <p className="text-xs text-muted-foreground">{stat.label}</p>
-                  <p className="mt-0.5 text-sm font-semibold">{stat.value}</p>
+            <div className="px-4 space-y-4">
+              {/* Origin */}
+              {product.origin && (
+                <div className="rounded-xl border px-3 py-2 flex items-center gap-3">
+                  <p className="text-[10px] text-muted-foreground shrink-0">Herkunft</p>
+                  <div className="flex items-center justify-between flex-1 text-xs font-semibold">
+                    {product.origin.split("→").map((step, i, arr) => (
+                      <span key={i} className="contents">
+                        {i > 0 && <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        <span>{step.trim()}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
 
-            <Separator />
+              {/* Badges */}
+              <div className="grid grid-cols-3 gap-2">
+                {product.nutriScore && (
+                  <div className="rounded-xl border px-3 py-1.5 text-center">
+                    <p className="text-[10px] text-muted-foreground leading-tight">Nutri-Score</p>
+                    <span className={`inline-block mt-0.5 rounded px-2 py-0.5 text-xs font-bold text-white ${GRADE_COLORS[product.nutriScore]}`}>
+                      {product.nutriScore}
+                    </span>
+                  </div>
+                )}
+                {sustainability && (
+                  <div className="rounded-xl border px-3 py-1.5 text-center">
+                    <p className="text-[10px] text-muted-foreground leading-tight">CO₂</p>
+                    <p className="text-xs font-semibold leading-tight mt-0.5">{sustainability.totalCo2Kg} kg</p>
+                  </div>
+                )}
+                {(batch?.temperatureLogs ?? []).length > 0 && (
+                  <div className={`rounded-xl border px-3 py-1.5 text-center ${coldChainOk ? "border-emerald-200" : "border-amber-200"}`}>
+                    <p className="text-[10px] text-muted-foreground leading-tight">Kühlkette</p>
+                    <p className="text-xs font-semibold leading-tight mt-0.5">{coldChainOk ? "Intakt" : "Abweichung"}</p>
+                  </div>
+                )}
+              </div>
 
-            {product.certifications.length > 0 && (
-              <>
-                <div className="flex flex-wrap gap-1.5 px-4">
-                  {product.certifications.map((certification) => (
-                    <Badge key={certification} variant="secondary">
-                      {certification}
-                    </Badge>
+              {/* Certifications */}
+              {(product.certifications ?? []).length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {(product.certifications ?? []).map((c) => (
+                    <span key={c} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-[11px] font-semibold text-emerald-800">
+                      {certIcon(c)}
+                      {c}
+                    </span>
                   ))}
                 </div>
-                <Separator />
-              </>
-            )}
+              )}
 
-            <div className="space-y-1 px-4">
-              <h3 className="text-sm font-semibold">Ingredients</h3>
-              <p className="text-sm text-muted-foreground">
-                Cocoa mass, sugar, cocoa butter, vanilla extract. Cocoa solids:
-                70% minimum.
-              </p>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2 px-4">
-              <h3 className="text-sm font-semibold">Nutrition Facts</h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                {[
-                  { label: "Energy", value: `${product.nutrition.energyKcal} kcal` },
-                  { label: "Fat", value: `${product.nutrition.fat} g` },
-                  { label: "Saturated Fat", value: `${product.nutrition.saturatedFat} g` },
-                  { label: "Carbohydrates", value: `${product.nutrition.carbs} g` },
-                  { label: "Sugars", value: `${product.nutrition.sugars} g` },
-                  { label: "Protein", value: `${product.nutrition.protein} g` },
-                  { label: "Salt", value: `${product.nutrition.salt} g` },
-                  { label: "Fibre", value: `${product.nutrition.fiber} g` },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex justify-between border-b border-border/50 py-1"
-                  >
-                    <span className="text-muted-foreground">{item.label}</span>
-                    <span className="font-medium">{item.value}</span>
+              {/* Nutrition */}
+              {product.nutrition && (
+                <section>
+                  <p className="text-sm font-semibold mb-2">Nährwerte</p>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-[13px]">
+                    <NutritionRow label="Energie" value={`${product.nutrition.energyKcal ?? 0} kcal`} />
+                    <NutritionRow label="Fett" value={`${product.nutrition.fat ?? 0} g`} />
+                    <NutritionRow label="Ges. Fettsäuren" value={`${product.nutrition.saturatedFat ?? 0} g`} />
+                    <NutritionRow label="Kohlenhydrate" value={`${product.nutrition.sugars ?? 0} g`} />
+                    <NutritionRow label="Eiweiß" value={`${product.nutrition.protein ?? 0} g`} />
+                    <NutritionRow label="Salz" value={`${product.nutrition.salt ?? 0} g`} />
+                    <NutritionRow label="Ballaststoffe" value={`${product.nutrition.fiber ?? 0} g`} />
                   </div>
-                ))}
-              </div>
-            </div>
+                </section>
+              )}
 
-            <Separator />
+              {/* Shelf life */}
+              {shelfLife && <ShelfLifeCard prediction={shelfLife} />}
 
-            <div className="space-y-2 px-4">
-              <h3 className="text-sm font-semibold">Ecological Footprint</h3>
-              <div className="rounded-xl bg-muted p-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">CO₂ per 100g</span>
-                  <span className="font-medium">
-                    {batch?.co2Kg != null ? `${batch.co2Kg} kg CO₂e` : "-"}
-                  </span>
+              {/* Anomalies */}
+              {anomalies.length > 0 && (
+                <section>
+                  {anomalies.map((a) => (
+                    <div key={a.id} className="rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-amber-800">
+                      <p className="text-xs font-semibold">{a.title}</p>
+                      <p className="text-[11px] mt-0.5">{a.description}</p>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              {/* Ecological footprint */}
+              {sustainability && (
+                <section>
+                  <p className="text-sm font-semibold mb-2">Ökologischer Fußabdruck</p>
+                  <div className="space-y-1.5 text-[13px]">
+                    <NutritionRow label="CO₂ pro 100 g" value={`${sustainability.totalCo2Kg} kg`} />
+                    <NutritionRow label="Wasserverbrauch" value={`${sustainability.waterFootprintL} L`} />
+                    <NutritionRow label="Transportweg" value={`${sustainability.transportDistanceKm.toLocaleString()} km`} />
+                  </div>
+                  <p className={`text-xs mt-1.5 ${sustainability.comparisonToAverage < 0 ? "text-emerald-600" : "text-amber-600"}`}>
+                    {sustainability.comparisonToAverage < 0
+                      ? `${Math.abs(sustainability.comparisonToAverage)}% unter Durchschnitt`
+                      : `${sustainability.comparisonToAverage}% über Durchschnitt`}
+                  </p>
+                </section>
+              )}
+
+              {/* Alternatives */}
+              {alternatives && <AlternativesCard data={alternatives} />}
+
+              {/* Report issue */}
+              {reportSent ? (
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5">
+                  <p className="text-xs font-semibold text-emerald-800">Meldung gesendet — Danke!</p>
                 </div>
-                <div className="mt-2 h-2 overflow-hidden rounded-full bg-background">
-                  <div className="h-full w-[45%] rounded-full bg-amber-500" />
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Moderate impact
-                </p>
-              </div>
-            </div>
-
-            <Separator />
-
-            <div className="space-y-2 px-4 pb-6">
-              <Button className="w-full">Report Issue</Button>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => navigate("/")}
-              >
-                Back to Home
-              </Button>
+              ) : (
+                <button
+                  onClick={() => setReportStep("reason")}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-semibold text-red-700 active:bg-red-100"
+                >
+                  <Flag className="h-3.5 w-3.5" />
+                  Problem melden
+                </button>
+              )}
             </div>
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Report sheet — step 1: pick reason */}
+      {reportStep === "reason" && (
+        <div className="fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
+            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
+            <div className="text-center">
+              <Flag className="h-6 w-6 text-red-500 mx-auto mb-1" />
+              <p className="text-base font-semibold">Problem melden</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{product.name}</p>
+            </div>
+            <div className="space-y-2">
+              {REPORT_REASONS.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => { setReportReason(r); setReportStep("detail"); }}
+                  className="flex w-full items-center rounded-xl border px-3 py-2.5 text-sm active:bg-muted transition-colors"
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <button onClick={() => setReportStep("closed")} className="w-full py-2 text-sm text-muted-foreground">
+              Abbrechen
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Report sheet — step 2: add details */}
+      {reportStep === "detail" && (
+        <div className="fixed inset-0 z-[60]">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
+          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
+            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
+            <div className="text-center">
+              <p className="text-base font-semibold">{reportReason}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Beschreibe das Problem{reportReason !== "Sonstiges" ? " (optional)" : ""}</p>
+            </div>
+            <textarea
+              value={reportDetail}
+              onChange={(e) => setReportDetail(e.target.value)}
+              placeholder="Was ist passiert?"
+              rows={4}
+              autoFocus
+              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
+            />
+            <button
+              onClick={() => { setReportSent(true); setReportStep("closed"); }}
+              disabled={reportReason === "Sonstiges" && !reportDetail.trim()}
+              className="w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white disabled:opacity-30"
+            >
+              Absenden
+            </button>
+            <button onClick={() => setReportStep("reason")} className="w-full py-2 text-sm text-muted-foreground">
+              Zurück
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
