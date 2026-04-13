@@ -308,6 +308,7 @@ export default function ProductScreen() {
   const [expandedCard, setExpandedCard] = useState(false);
   const [descriptions, setDescriptions] = useState<Record<string, string>>({});
   const [reportStep, setReportStep] = useState<"closed" | "reason" | "detail">("closed");
+
   const [reportReason, setReportReason] = useState("");
   const [reportDetail, setReportDetail] = useState("");
   const [reportSent, setReportSent] = useState(false);
@@ -1080,93 +1081,71 @@ export default function ProductScreen() {
               {/* Alternatives */}
               {alternatives && <AlternativesCard data={alternatives} />}
 
-              {/* Report issue */}
+              {/* Report issue — inline inside drawer */}
               {reportSent ? (
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5">
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 py-2.5 mb-6">
                   <p className="text-xs font-semibold text-emerald-800">Meldung gesendet — Danke!</p>
                 </div>
-              ) : (
+              ) : reportStep === "closed" ? (
                 <button
                   onClick={() => setReportStep("reason")}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-semibold text-red-700 active:bg-red-100"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 py-2.5 mb-6 text-xs font-semibold text-red-700 active:bg-red-100"
                 >
                   <Flag className="h-3.5 w-3.5" />
                   Problem melden
                 </button>
+              ) : reportStep === "reason" ? (
+                <div className="rounded-xl border border-red-200 bg-red-50/30 p-4 space-y-3 mb-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">Was stimmt nicht?</p>
+                    <button onClick={() => setReportStep("closed")} className="text-xs text-muted-foreground">Abbrechen</button>
+                  </div>
+                  {REPORT_REASONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => { setReportReason(r); setReportStep("detail"); }}
+                      className="flex w-full items-center rounded-xl border bg-background px-3 py-2.5 text-sm active:bg-muted transition-colors"
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-red-200 bg-red-50/30 p-4 space-y-3 mb-6">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold">{reportReason}</p>
+                    <button onClick={() => setReportStep("reason")} className="text-xs text-muted-foreground">Zurück</button>
+                  </div>
+                  <textarea
+                    value={reportDetail}
+                    onChange={(e) => setReportDetail(e.target.value)}
+                    placeholder="Beschreibe das Problem..."
+                    rows={3}
+                    autoFocus
+                    className="w-full rounded-xl border bg-background px-3 py-2.5 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
+                  />
+                  <button
+                    onClick={() => {
+                      productApi.createReport({
+                        productId: product.id!,
+                        batchId: batch?.id,
+                        createReportDto: { reason: reportReason, details: reportDetail || undefined },
+                      }).catch(() => {});
+                      setReportSent(true);
+                      setReportStep("closed");
+                    }}
+                    disabled={reportReason === "Sonstiges" && !reportDetail.trim()}
+                    className="w-full rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white disabled:opacity-30"
+                  >
+                    Absenden
+                  </button>
+                </div>
               )}
             </div>
           </div>
         </DrawerContent>
       </Drawer>
 
-      {/* Report sheet — step 1: pick reason */}
-      {reportStep === "reason" && (
-        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
-            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
-            <div className="text-center">
-              <Flag className="h-6 w-6 text-red-500 mx-auto mb-1" />
-              <p className="text-base font-semibold">Problem melden</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{product.name}</p>
-            </div>
-            <div className="space-y-2">
-              {REPORT_REASONS.map((r) => (
-                <button
-                  key={r}
-                  onClick={() => { setReportReason(r); setReportStep("detail"); }}
-                  className="flex w-full items-center rounded-xl border px-3 py-2.5 text-sm active:bg-muted transition-colors"
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-            <button onClick={() => setReportStep("closed")} className="w-full py-2 text-sm text-muted-foreground">
-              Abbrechen
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Report sheet — step 2: add details */}
-      {reportStep === "detail" && (
-        <div className="fixed inset-0 z-[60]" onPointerDownCapture={(e) => e.stopPropagation()} onTouchMoveCapture={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-black/40" onClick={() => setReportStep("closed")} />
-          <div className="absolute bottom-0 left-0 right-0 mx-auto max-w-md rounded-t-2xl bg-background p-5 space-y-4">
-            <div className="mx-auto h-1 w-10 rounded-full bg-muted" />
-            <div className="text-center">
-              <p className="text-base font-semibold">{reportReason}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Beschreibe das Problem{reportReason !== "Sonstiges" ? " (optional)" : ""}</p>
-            </div>
-            <textarea
-              value={reportDetail}
-              onChange={(e) => setReportDetail(e.target.value)}
-              placeholder="Was ist passiert?"
-              rows={4}
-              autoFocus
-              className="w-full rounded-xl border px-3 py-3 text-sm outline-none resize-none focus:ring-1 focus:ring-red-400"
-            />
-            <button
-              onClick={() => {
-                productApi.createReport({
-                  productId: product.id!,
-                  batchId: batch?.id,
-                  createReportDto: { reason: reportReason, details: reportDetail || undefined },
-                }).catch(() => {});
-                setReportSent(true);
-                setReportStep("closed");
-              }}
-              disabled={reportReason === "Sonstiges" && !reportDetail.trim()}
-              className="w-full rounded-xl bg-red-600 py-3 text-sm font-semibold text-white disabled:opacity-30"
-            >
-              Absenden
-            </button>
-            <button onClick={() => setReportStep("reason")} className="w-full py-2 text-sm text-muted-foreground">
-              Zurück
-            </button>
-          </div>
-        </div>
-      )}
 
       {product?.id && <ProductChat productId={product.id} batchId={batch?.id} />}
     </div>
